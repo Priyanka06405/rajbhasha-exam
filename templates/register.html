@@ -1,219 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block content %}
 
-    <title>Rajbhasha Exam - Registration</title>
+<div class="container">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    <div class="card">
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa, #e8eef5);
+        <h1>Rajbhasha Exam</h1>
 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 450px;
-
-            background: white;
-
-            padding: 35px;
-
-            border-radius: 15px;
-
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            margin: 0;
-
-            font-size: 28px;
-
-            color: #222;
-        }
-
-        .header p {
-            margin-top: 10px;
-
-            color: #666;
-
-            font-size: 15px;
-        }
-
-        label {
-            display: block;
-
-            margin-bottom: 7px;
-
-            font-weight: bold;
-
-            color: #333;
-        }
-
-        input {
-            width: 100%;
-
-            padding: 13px;
-
-            margin-bottom: 20px;
-
-            border: 1px solid #ccc;
-
-            border-radius: 8px;
-
-            font-size: 16px;
-        }
-
-        input:focus {
-            outline: none;
-
-            border-color: #555;
-        }
-
-        button {
-            width: 100%;
-
-            padding: 14px;
-
-            border: none;
-
-            border-radius: 8px;
-
-            background: #222;
-
-            color: white;
-
-            font-size: 17px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #444;
-        }
-
-        .message {
-            padding: 12px;
-
-            margin-bottom: 20px;
-
-            border-radius: 8px;
-
-            background: #f1f1f1;
-
-            color: #333;
-
-            font-size: 14px;
-        }
-
-        .login-link {
-            text-align: center;
-
-            margin-top: 20px;
-
-            font-size: 14px;
-        }
-
-        .login-link a {
-            color: #222;
-
-            font-weight: bold;
-
-            text-decoration: none;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-
-        .admin-link {
-            text-align: center;
-
-            margin-top: 25px;
-
-            font-size: 13px;
-        }
-
-        .admin-link a {
-            color: #777;
-
-            text-decoration: none;
-        }
-
-        @media (max-width: 500px) {
-
-            .container {
-                padding: 25px 20px;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
-        }
-    </style>
-
-</head>
-
-<body>
-
-    <div class="container">
-
-        <div class="header">
-
-            <h1>Rajbhasha Exam</h1>
-
-            <p>Participant Registration</p>
-
-        </div>
-
-
-        <!-- Flash Messages -->
+        <h2>Participant Registration</h2>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
-
             {% if messages %}
-
                 {% for category, message in messages %}
-
                     <div class="message">
                         {{ message }}
                     </div>
-
                 {% endfor %}
-
             {% endif %}
-
         {% endwith %}
-
-
-        <!-- Registration Form -->
 
         <form method="POST">
 
-            <label for="name">
-                Full Name
-            </label>
+            <label for="name">Full Name</label>
 
             <input
                 type="text"
@@ -224,22 +33,18 @@
             >
 
 
-            <label for="registration_id">
-                Registration ID
-            </label>
+            <label for="registration_id">Personal Number</label>
 
             <input
                 type="text"
                 id="registration_id"
                 name="registration_id"
-                placeholder="Enter your Registration ID"
+                placeholder="Enter your personal number"
                 required
             >
 
 
-            <label for="password">
-                Password
-            </label>
+            <label for="password">Password</label>
 
             <input
                 type="password"
@@ -257,27 +62,21 @@
         </form>
 
 
-        <div class="login-link">
-
+        <p>
             Already registered?
-
             <a href="{{ url_for('login') }}">
                 Login here
             </a>
+        </p>
 
-        </div>
-
-
-        <div class="admin-link">
-
+        <p>
             <a href="{{ url_for('admin_login') }}">
                 Admin Login
             </a>
-
-        </div>
+        </p>
 
     </div>
 
-</body>
+</div>
 
-</html>
+{% endblock %}
