@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Exam Submitted</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+
+            background: white;
+
+            padding: 40px 30px;
+
+            border-radius: 15px;
+
+            text-align: center;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .success-icon {
+            font-size: 60px;
+
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0 0 15px;
+
+            color: #222;
+
+            font-size: 28px;
+        }
+
+        .name {
+            font-size: 18px;
+
+            font-weight: bold;
+
+            margin-bottom: 25px;
+        }
+
+        .message {
+            color: #555;
+
+            line-height: 1.6;
+
+            margin-bottom: 25px;
+        }
+
+        .result-box {
+            background: #f5f5f5;
+
+            border-radius: 10px;
+
+            padding: 20px;
+
+            margin-bottom: 25px;
+        }
+
+        .result-box .label {
+            color: #666;
+
+            font-size: 14px;
+        }
+
+        .result-box .score {
+            font-size: 32px;
+
+            font-weight: bold;
+
+            margin-top: 8px;
+        }
+
+        .logout {
+            display: inline-block;
+
+            padding: 12px 25px;
+
+            background: #222;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 8px;
+
+            font-weight: bold;
+        }
+
+        .logout:hover {
+            background: #444;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="card">
+
+        <div class="success-icon">
+            ✅
+        </div>
+
+        <h1>
+            Test Submitted Successfully
+        </h1>
+
+        <div class="name">
+            {{ participant.name }}
+        </div>
+
+        <div class="message">
+
+            Your examination has been submitted successfully.
+
+            <br>
+
+            Your responses have been recorded.
+
+            <br><br>
+
+            The final result will be available to the administrator.
+
+        </div>
+
+        <div class="result-box">
+
+            <div class="label">
+                Your Score
+            </div>
+
+            <div class="score">
+
+                {{ attempt.score }} / {{ attempt.total_questions }}
+
+            </div>
+
+        </div>
+
+        <a
+            href="{{ url_for('logout') }}"
+            class="logout"
+        >
+            Logout
+        </a>
+
+    </div>
+
+</body>
+
+</html>
