@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Exam Already Submitted</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+
+            background: white;
+
+            padding: 40px 30px;
+
+            border-radius: 15px;
+
+            text-align: center;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .icon {
+            font-size: 60px;
+
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 27px;
+
+            color: #222;
+
+            margin-bottom: 15px;
+        }
+
+        p {
+            color: #555;
+
+            line-height: 1.6;
+
+            margin-bottom: 25px;
+        }
+
+        .button {
+            display: inline-block;
+
+            padding: 12px 25px;
+
+            background: #222;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 8px;
+
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background: #444;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="card">
+
+        <div class="icon">
+            ℹ️
+        </div>
+
+        <h1>
+            Test Already Submitted
+        </h1>
+
+        <p>
+
+            You have already submitted your examination.
+
+            <br><br>
+
+            You cannot attempt the test again.
+
+            <br><br>
+
+            Please contact the administrator if you believe this is an error.
+
+        </p>
+
+        <a
+            href="{{ url_for('logout') }}"
+            class="button"
+        >
+            Logout
+        </a>
+
+    </div>
+
+</body>
+
+</html>
