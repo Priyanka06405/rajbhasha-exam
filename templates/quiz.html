@@ -1,588 +1,305 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .quiz-container {
+        max-width: 900px;
+        margin: 30px auto;
+    }
+
+    .quiz-header {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    .quiz-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 30px;
+    }
+
+    .participant-name {
+        font-size: 18px;
+        color: #555;
+    }
+
+    .question-card {
+        background: white;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 15px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    .question-number {
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .question-text {
+        font-size: 19px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .option {
+        border: 1px solid #d0d0d0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #fafafa;
+    }
+
+    .option:hover {
+        background: #f0f0f0;
+    }
+
+    .option input {
+        margin-right: 10px;
+    }
+
+    .option-label {
+        font-weight: bold;
+        margin-right: 8px;
+    }
+
+    .submit-section {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    }
+
+    .submit-button {
+        background: #222;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .submit-button:hover {
+        background: #000;
+    }
+</style>
+
 
-<head>
+<div class="quiz-container">
 
-    <meta charset="UTF-8">
+    <div class="quiz-header">
+        <h1>Rajbhasha Exam</h1>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Rajbhasha Exam</title>
-
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-
-            margin: 0;
-
-            font-family: Arial, sans-serif;
-
-            background: #f4f6f8;
-
-            color: #222;
-        }
-
-
-        /* =========================
-           HEADER
-        ========================== */
-
-        .header {
-
-            background: #222;
-
-            color: white;
-
-            padding: 15px 25px;
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            position: sticky;
-
-            top: 0;
-
-            z-index: 100;
-        }
-
-
-        .header-title {
-
-            font-size: 20px;
-
-            font-weight: bold;
-        }
-
-
-        .participant {
-
-            font-size: 14px;
-
-            text-align: right;
-        }
-
-
-        /* =========================
-           MAIN CONTAINER
-        ========================== */
-
-        .container {
-
-            max-width: 900px;
-
-            margin: 25px auto;
-
-            padding: 0 15px;
-        }
-
-
-        /* =========================
-           INSTRUCTIONS
-        ========================== */
-
-        .instructions {
-
-            background: white;
-
-            padding: 18px;
-
-            border-radius: 10px;
-
-            margin-bottom: 20px;
-
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-
-        .instructions h3 {
-
-            margin-top: 0;
-        }
-
-
-        .instructions ul {
-
-            margin-bottom: 0;
-
-            padding-left: 20px;
-
-            line-height: 1.7;
-        }
-
-
-        /* =========================
-           QUESTION CARD
-        ========================== */
-
-        .question-card {
-
-            background: white;
-
-            padding: 25px;
-
-            margin-bottom: 20px;
-
-            border-radius: 10px;
-
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-
-        .question-number {
-
-            font-weight: bold;
-
-            color: #555;
-
-            margin-bottom: 10px;
-        }
-
-
-        .question-text {
-
-            font-size: 19px;
-
-            font-weight: bold;
-
-            line-height: 1.5;
-
-            margin-bottom: 20px;
-        }
-
-
-        /* =========================
-           OPTIONS
-        ========================== */
-
-        .option {
-
-            display: block;
-
-            border: 1px solid #d0d0d0;
-
-            border-radius: 8px;
-
-            padding: 13px 15px;
-
-            margin-bottom: 10px;
-
-            cursor: pointer;
-
-            transition: 0.2s;
-
-            background: #fff;
-        }
-
-
-        .option:hover {
-
-            background: #f5f5f5;
-        }
-
-
-        .option input {
-
-            margin-right: 10px;
-        }
-
-
-        /* =========================
-           SUBMIT SECTION
-        ========================== */
-
-        .submit-section {
-
-            background: white;
-
-            padding: 25px;
-
-            border-radius: 10px;
-
-            text-align: center;
-
-            margin-bottom: 40px;
-
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-
-        .warning {
-
-            color: #a33;
-
-            font-weight: bold;
-
-            margin-bottom: 15px;
-        }
-
-
-        .submit-button {
-
-            background: #222;
-
-            color: white;
-
-            border: none;
-
-            border-radius: 8px;
-
-            padding: 15px 35px;
-
-            font-size: 17px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-        }
-
-
-        .submit-button:hover {
-
-            background: #444;
-        }
-
-
-        /* =========================
-           MOBILE
-        ========================== */
-
-        @media (max-width: 600px) {
-
-            .header {
-
-                padding: 12px 15px;
-            }
-
-
-            .header-title {
-
-                font-size: 16px;
-            }
-
-
-            .participant {
-
-                font-size: 12px;
-            }
-
-
-            .container {
-
-                margin-top: 15px;
-            }
-
-
-            .question-card {
-
-                padding: 18px;
-            }
-
-
-            .question-text {
-
-                font-size: 17px;
-            }
-
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-
-<!-- =========================
-     HEADER
-========================== -->
-
-<div class="header">
-
-    <div class="header-title">
-
-        Rajbhasha Objective Examination
-
+        <div class="participant-name">
+            Participant:
+            <strong>{{ participant.name }}</strong>
+        </div>
     </div>
 
 
-    <div class="participant">
-
-        {{ participant.name }}
-
-        <br>
-
-        {{ participant.registration_id }}
-
-    </div>
-
-</div>
-
-
-
-<div class="container">
-
-
-    <!-- =========================
-         INSTRUCTIONS
-    ========================== -->
-
-    <div class="instructions">
-
-        <h3>Instructions</h3>
-
-        <ul>
-
-            <li>
-                There are {{ questions|length }} objective questions.
-            </li>
-
-            <li>
-                Each question has four options.
-            </li>
-
-            <li>
-                Select one answer for each question.
-            </li>
-
-            <li>
-                Your answers will be saved when you submit the test.
-            </li>
-
-            <li>
-                Once submitted, the test cannot be changed.
-            </li>
-
-        </ul>
-
-    </div>
-
-
-
-    <!-- =========================
-         QUIZ FORM
-    ========================== -->
-
-    <form method="POST"
-          id="quizForm">
-
+    <form method="POST" id="quizForm">
 
         {% for question in questions %}
 
         <div class="question-card">
 
-
             <div class="question-number">
-
                 Question {{ loop.index }}
-
             </div>
-
 
             <div class="question-text">
-
                 {{ question.question_text }}
-
             </div>
 
 
-            <!-- OPTION A -->
+            <div class="options">
 
-            <label class="option">
+                <!--
+                    IMPORTANT:
+                    The VALUE remains the original answer letter.
+                    Only the visual order is shuffled.
+                -->
 
-                <input
-                    type="radio"
-                    name="question_{{ question.id }}"
-                    value="A"
-                >
-
-                <strong>A.</strong>
-
-                {{ question.option_a }}
-
-            </label>
-
-
-            <!-- OPTION B -->
-
-            <label class="option">
-
-                <input
-                    type="radio"
-                    name="question_{{ question.id }}"
-                    value="B"
-                >
-
-                <strong>B.</strong>
-
-                {{ question.option_b }}
-
-            </label>
+                <label class="option">
+                    <input
+                        type="radio"
+                        name="question_{{ question.id }}"
+                        value="A"
+                    >
+                    <span class="option-label">A.</span>
+                    <span class="option-text">
+                        {{ question.option_a }}
+                    </span>
+                </label>
 
 
-            <!-- OPTION C -->
-
-            <label class="option">
-
-                <input
-                    type="radio"
-                    name="question_{{ question.id }}"
-                    value="C"
-                >
-
-                <strong>C.</strong>
-
-                {{ question.option_c }}
-
-            </label>
+                <label class="option">
+                    <input
+                        type="radio"
+                        name="question_{{ question.id }}"
+                        value="B"
+                    >
+                    <span class="option-label">B.</span>
+                    <span class="option-text">
+                        {{ question.option_b }}
+                    </span>
+                </label>
 
 
-            <!-- OPTION D -->
+                <label class="option">
+                    <input
+                        type="radio"
+                        name="question_{{ question.id }}"
+                        value="C"
+                    >
+                    <span class="option-label">C.</span>
+                    <span class="option-text">
+                        {{ question.option_c }}
+                    </span>
+                </label>
 
-            <label class="option">
 
-                <input
-                    type="radio"
-                    name="question_{{ question.id }}"
-                    value="D"
-                >
+                <label class="option">
+                    <input
+                        type="radio"
+                        name="question_{{ question.id }}"
+                        value="D"
+                    >
+                    <span class="option-label">D.</span>
+                    <span class="option-text">
+                        {{ question.option_d }}
+                    </span>
+                </label>
 
-                <strong>D.</strong>
-
-                {{ question.option_d }}
-
-            </label>
-
+            </div>
 
         </div>
 
         {% endfor %}
 
 
-
-        <!-- =========================
-             SUBMIT
-        ========================== -->
-
         <div class="submit-section">
 
-            <div class="warning">
-
-                ⚠️ Please check your answers before submitting.
-
-            </div>
-
-
             <p>
-
-                Once you click <strong>Submit Test</strong>,
-                you cannot change your answers.
-
+                Please check all your answers before submitting.
             </p>
 
-
             <button
-                type="button"
-                class="submit-button"
-                onclick="confirmSubmit()"
-            >
-
-                Submit Test
-
-            </button>
-
-
-            <input
-                type="hidden"
+                type="submit"
                 name="submit_test"
-                id="submitTest"
-                value="no"
+                value="yes"
+                class="submit-button"
+                onclick="return confirmSubmit();"
             >
+                Submit Test
+            </button>
 
         </div>
 
-
     </form>
-
 
 </div>
 
 
-
 <script>
 
-function confirmSubmit() {
+function shuffleOptions() {
 
-    const form = document.getElementById("quizForm");
+    const questionCards =
+        document.querySelectorAll(".question-card");
 
-    const submitField =
-        document.getElementById("submitTest");
+    questionCards.forEach(function(card) {
 
+        const optionsContainer =
+            card.querySelector(".options");
 
-    const totalQuestions =
-        document.querySelectorAll(
-            ".question-card"
-        ).length;
-
-
-    const answeredQuestions =
-        document.querySelectorAll(
-            "input[type='radio']:checked"
-        ).length;
-
-
-    const unanswered =
-        totalQuestions - answeredQuestions;
-
-
-    if (unanswered > 0) {
-
-        const message =
-            "You have not answered " +
-            unanswered +
-            " question(s).\n\n" +
-            "Are you sure you want to submit?";
-
-
-        if (!confirm(message)) {
-
+        if (!optionsContainer) {
             return;
         }
 
-    } else {
+        const options =
+            Array.from(
+                optionsContainer.children
+            );
 
-        const message =
-            "You have answered all " +
-            totalQuestions +
-            " questions.\n\n" +
-            "Are you sure you want to submit the test?";
+        // Fisher-Yates shuffle
+        for (
+            let i = options.length - 1;
+            i > 0;
+            i--
+        ) {
 
+            const j =
+                Math.floor(
+                    Math.random() * (i + 1)
+                );
 
-        if (!confirm(message)) {
-
-            return;
+            [
+                options[i],
+                options[j]
+            ] = [
+                options[j],
+                options[i]
+            ];
         }
 
-    }
+        options.forEach(function(option, index) {
 
+            const label =
+                option.querySelector(
+                    ".option-label"
+                );
 
-    submitField.value = "yes";
+            const newLetter =
+                String.fromCharCode(
+                    65 + index
+                );
 
-    form.submit();
+            label.textContent =
+                newLetter + ".";
+
+            optionsContainer.appendChild(
+                option
+            );
+
+        });
+
+    });
 
 }
 
+
+function confirmSubmit() {
+
+    return confirm(
+        "Are you sure you want to submit the examination?\n\n" +
+        "You will not be able to change your answers after submission."
+    );
+
+}
+
+
+// Shuffle options when the page loads
+window.addEventListener(
+    "DOMContentLoaded",
+    shuffleOptions
+);
+
 </script>
 
-
-</body>
-
-</html>
+{% endblock %}
