@@ -17,27 +17,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # ============================================================
-# APP CONFIGURATION
+# APPLICATION CONFIGURATION
 # ============================================================
 
 app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
-    "change-this-secret-key-before-production"
+    "development-secret-change-before-exam"
 )
 
-# ------------------------------------------------------------
-# DATABASE
-# ------------------------------------------------------------
-# On Render we will use PostgreSQL through DATABASE_URL.
-# For testing, SQLite can be used as a fallback.
-# ------------------------------------------------------------
+
+# ============================================================
+# DATABASE CONFIGURATION
+# ============================================================
 
 database_url = os.environ.get("DATABASE_URL")
 
 if database_url:
-    # Render may provide postgres:// instead of postgresql://
+
     if database_url.startswith("postgres://"):
         database_url = database_url.replace(
             "postgres://",
@@ -48,6 +46,7 @@ if database_url:
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
 else:
+
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///exam.db"
 
 
@@ -57,15 +56,22 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
-# DATABASE MODELS
+# PARTICIPANT
 # ============================================================
 
 class Participant(db.Model):
+
     __tablename__ = "participants"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
 
-    name = db.Column(db.String(150), nullable=False)
+    name = db.Column(
+        db.String(150),
+        nullable=False
+    )
 
     registration_id = db.Column(
         db.String(100),
@@ -75,7 +81,7 @@ class Participant(db.Model):
 
     password_hash = db.Column(
         db.String(255),
-        nullable=False
+        nullable=True
     )
 
     registered_at = db.Column(
@@ -83,18 +89,26 @@ class Participant(db.Model):
         default=datetime.utcnow
     )
 
-    # Relationship with attempts
     attempts = db.relationship(
         "Attempt",
         backref="participant",
-        lazy=True
+        lazy=True,
+        cascade="all, delete-orphan"
     )
 
 
+# ============================================================
+# QUESTION
+# ============================================================
+
 class Question(db.Model):
+
     __tablename__ = "questions"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
 
     question_text = db.Column(
         db.Text,
@@ -121,17 +135,24 @@ class Question(db.Model):
         nullable=False
     )
 
-    # Stores A, B, C or D
     correct_answer = db.Column(
         db.String(1),
         nullable=False
     )
 
 
+# ============================================================
+# ATTEMPT
+# ============================================================
+
 class Attempt(db.Model):
+
     __tablename__ = "attempts"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
 
     participant_id = db.Column(
         db.Integer,
@@ -172,10 +193,18 @@ class Attempt(db.Model):
     )
 
 
+# ============================================================
+# ANSWER
+# ============================================================
+
 class Answer(db.Model):
+
     __tablename__ = "answers"
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
 
     attempt_id = db.Column(
         db.Integer,
@@ -189,7 +218,6 @@ class Answer(db.Model):
         nullable=False
     )
 
-    # Stores the displayed option letter
     selected_answer = db.Column(
         db.String(1),
         nullable=True
@@ -202,20 +230,24 @@ class Answer(db.Model):
 
 
 # ============================================================
-# CREATE DATABASE TABLES
+# CREATE TABLES
 # ============================================================
 
 with app.app_context():
+
     db.create_all()
 
 
 # ============================================================
-# HOME PAGE
+# HOME
 # ============================================================
 
 @app.route("/")
 def index():
-    return redirect(url_for("register"))
+
+    return redirect(
+        url_for("login")
+    )
 
 
 # ============================================================
@@ -227,7 +259,11 @@ def register():
 
     if request.method == "POST":
 
-        name = request.form.get("name", "").strip()
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
+
         registration_id = request.form.get(
             "registration_id",
             ""
@@ -238,44 +274,103 @@ def register():
             ""
         )
 
-        # Basic validation
+
+        # ----------------------------------------------------
+        # Validate fields
+        # ----------------------------------------------------
+
         if not name or not registration_id or not password:
+
             flash(
                 "Please fill in all the fields.",
                 "error"
             )
-            return redirect(url_for("register"))
 
-        # Check duplicate registration ID
-        existing = Participant.query.filter_by(
+            return redirect(
+                url_for("register")
+            )
+
+
+        # ----------------------------------------------------
+        # Find authorized participant
+        # ----------------------------------------------------
+
+        participant = Participant.query.filter_by(
             registration_id=registration_id
         ).first()
 
-        if existing:
+
+        if not participant:
+
             flash(
-                "This Registration ID is already registered.",
+                "This Registration ID is not authorized "
+                "for this examination.",
                 "error"
             )
-            return redirect(url_for("register"))
 
-        # Create participant
-        participant = Participant(
-            name=name,
-            registration_id=registration_id,
-            password_hash=generate_password_hash(password)
+            return redirect(
+                url_for("register")
+            )
+
+
+        # ----------------------------------------------------
+        # Check name
+        # ----------------------------------------------------
+
+        if participant.name.lower() != name.lower():
+
+            flash(
+                "The name does not match the registered "
+                "participant information.",
+                "error"
+            )
+
+            return redirect(
+                url_for("register")
+            )
+
+
+        # ----------------------------------------------------
+        # Check existing registration
+        # ----------------------------------------------------
+
+        if participant.password_hash:
+
+            flash(
+                "This participant is already registered. "
+                "Please use the Login page.",
+                "error"
+            )
+
+            return redirect(
+                url_for("login")
+            )
+
+
+        # ----------------------------------------------------
+        # Save password
+        # ----------------------------------------------------
+
+        participant.password_hash = generate_password_hash(
+            password
         )
 
-        db.session.add(participant)
         db.session.commit()
 
+
         flash(
-            "Registration successful. You can now log in.",
+            "Registration completed successfully.",
             "success"
         )
 
-        return redirect(url_for("login"))
+        return redirect(
+            url_for("login")
+        )
 
-    return render_template("register.html")
+
+    return render_template(
+        "register.html"
+    )
 
 
 # ============================================================
@@ -297,37 +392,53 @@ def login():
             ""
         )
 
+
         participant = Participant.query.filter_by(
             registration_id=registration_id
         ).first()
 
-        if participant and check_password_hash(
-            participant.password_hash,
-            password
+
+        if (
+            participant
+            and participant.password_hash
+            and check_password_hash(
+                participant.password_hash,
+                password
+            )
         ):
+
+            session.clear()
 
             session["participant_id"] = participant.id
 
-            return redirect(url_for("start_exam"))
+            return redirect(
+                url_for("start_exam")
+            )
+
 
         flash(
             "Invalid Registration ID or password.",
             "error"
         )
 
-    return render_template("login.html")
+
+    return render_template(
+        "login.html"
+    )
 
 
 # ============================================================
-# LOGOUT
+# PARTICIPANT LOGOUT
 # ============================================================
 
 @app.route("/logout")
 def logout():
 
-    session.pop("participant_id", None)
+    session.clear()
 
-    return redirect(url_for("login"))
+    return redirect(
+        url_for("login")
+    )
 
 
 # ============================================================
@@ -337,58 +448,117 @@ def logout():
 @app.route("/start")
 def start_exam():
 
-    participant_id = session.get("participant_id")
+    participant_id = session.get(
+        "participant_id"
+    )
+
 
     if not participant_id:
-        return redirect(url_for("login"))
+
+        return redirect(
+            url_for("login")
+        )
+
 
     participant = db.session.get(
         Participant,
         participant_id
     )
 
-    if not participant:
-        session.pop("participant_id", None)
-        return redirect(url_for("login"))
 
-    # Check whether participant already has an attempt
+    if not participant:
+
+        session.clear()
+
+        return redirect(
+            url_for("login")
+        )
+
+
+    # --------------------------------------------------------
+    # Check previous attempt
+    # --------------------------------------------------------
+
     attempt = Attempt.query.filter_by(
         participant_id=participant.id
     ).first()
 
+
     if attempt:
 
         if attempt.status == "SUBMITTED":
-            return redirect(url_for("already_submitted"))
+
+            return redirect(
+                url_for("already_submitted")
+            )
+
 
         session["attempt_id"] = attempt.id
 
-        return redirect(url_for("quiz"))
+        # Recreate question order if necessary
+        if not session.get("question_order"):
 
-    # Create a new attempt
-    questions_count = Question.query.count()
+            question_ids = [
+                q.id
+                for q in Question.query.all()
+            ]
+
+            random.shuffle(question_ids)
+
+            session["question_order"] = question_ids
+
+
+        return redirect(
+            url_for("quiz")
+        )
+
+
+    # --------------------------------------------------------
+    # Create new attempt
+    # --------------------------------------------------------
+
+    questions = Question.query.all()
+
+
+    if not questions:
+
+        return (
+            "No questions have been loaded yet. "
+            "Please contact the administrator."
+        )
+
 
     attempt = Attempt(
         participant_id=participant.id,
         status="IN_PROGRESS",
-        total_questions=questions_count
+        total_questions=len(questions)
     )
 
+
     db.session.add(attempt)
+
     db.session.commit()
 
-    session["attempt_id"] = attempt.id
 
+    # --------------------------------------------------------
     # Randomize question order
+    # --------------------------------------------------------
+
     question_ids = [
-        q.id for q in Question.query.all()
+        q.id
+        for q in questions
     ]
 
     random.shuffle(question_ids)
 
     session["question_order"] = question_ids
 
-    return redirect(url_for("quiz"))
+    session["attempt_id"] = attempt.id
+
+
+    return redirect(
+        url_for("quiz")
+    )
 
 
 # ============================================================
@@ -398,42 +568,62 @@ def start_exam():
 @app.route("/quiz", methods=["GET", "POST"])
 def quiz():
 
-    participant_id = session.get("participant_id")
-    attempt_id = session.get("attempt_id")
+    participant_id = session.get(
+        "participant_id"
+    )
+
+    attempt_id = session.get(
+        "attempt_id"
+    )
+
 
     if not participant_id or not attempt_id:
-        return redirect(url_for("login"))
+
+        return redirect(
+            url_for("login")
+        )
+
 
     attempt = db.session.get(
         Attempt,
         attempt_id
     )
 
+
     if not attempt:
-        return redirect(url_for("login"))
+
+        return redirect(
+            url_for("login")
+        )
+
 
     if attempt.status == "SUBMITTED":
-        return redirect(url_for("already_submitted"))
 
-    # --------------------------------------------------------
-    # Get question order
-    # --------------------------------------------------------
+        return redirect(
+            url_for("already_submitted")
+        )
 
-    question_order = session.get("question_order")
+
+    question_order = session.get(
+        "question_order"
+    )
+
 
     if not question_order:
 
         question_order = [
-            q.id for q in Question.query.all()
+            q.id
+            for q in Question.query.all()
         ]
 
         random.shuffle(question_order)
 
         session["question_order"] = question_order
 
-    # --------------------------------------------------------
-    # Save answers
-    # --------------------------------------------------------
+
+    # ========================================================
+    # SAVE ANSWERS
+    # ========================================================
 
     if request.method == "POST":
 
@@ -443,12 +633,14 @@ def quiz():
                 f"question_{question_id}"
             )
 
+
             if selected:
 
                 answer = Answer.query.filter_by(
                     attempt_id=attempt.id,
                     question_id=question_id
                 ).first()
+
 
                 if not answer:
 
@@ -459,18 +651,29 @@ def quiz():
 
                     db.session.add(answer)
 
+
                 answer.selected_answer = selected
+
 
         db.session.commit()
 
-        # Final submission
-        if request.form.get("submit_test") == "yes":
+
+        # ====================================================
+        # FINAL SUBMISSION
+        # ====================================================
+
+        if request.form.get(
+            "submit_test"
+        ) == "yes":
+
 
             score = 0
+
 
             answers = Answer.query.filter_by(
                 attempt_id=attempt.id
             ).all()
+
 
             for answer in answers:
 
@@ -479,38 +682,52 @@ def quiz():
                     answer.question_id
                 )
 
-                if question:
 
-                    if answer.selected_answer == question.correct_answer:
+                if not question:
+                    continue
 
-                        answer.is_correct = True
-                        score += 1
 
-                    else:
+                if (
+                    answer.selected_answer
+                    == question.correct_answer
+                ):
 
-                        answer.is_correct = False
+                    answer.is_correct = True
+
+                    score += 1
+
+                else:
+
+                    answer.is_correct = False
+
 
             attempt.score = score
+
             attempt.status = "SUBMITTED"
+
             attempt.submitted_at = datetime.utcnow()
+
 
             db.session.commit()
 
-            session.pop("question_order", None)
 
-            return redirect(
-                url_for(
-                    "submitted",
-                    score=score,
-                    total=len(question_order)
-                )
+            session.pop(
+                "question_order",
+                None
             )
 
-    # --------------------------------------------------------
-    # Prepare questions
-    # --------------------------------------------------------
+
+            return redirect(
+                url_for("submitted")
+            )
+
+
+    # ========================================================
+    # PREPARE QUESTIONS
+    # ========================================================
 
     questions = []
+
 
     for question_id in question_order:
 
@@ -519,8 +736,11 @@ def quiz():
             question_id
         )
 
+
         if question:
+
             questions.append(question)
+
 
     return render_template(
         "quiz.html",
@@ -536,22 +756,35 @@ def quiz():
 @app.route("/submitted")
 def submitted():
 
-    participant_id = session.get("participant_id")
+    participant_id = session.get(
+        "participant_id"
+    )
+
 
     if not participant_id:
-        return redirect(url_for("login"))
+
+        return redirect(
+            url_for("login")
+        )
+
 
     participant = db.session.get(
         Participant,
         participant_id
     )
 
+
     attempt = Attempt.query.filter_by(
         participant_id=participant_id
     ).first()
 
-    if not attempt:
-        return redirect(url_for("login"))
+
+    if not participant or not attempt:
+
+        return redirect(
+            url_for("login")
+        )
+
 
     return render_template(
         "submitted.html",
@@ -591,6 +824,7 @@ def admin_login():
             ""
         )
 
+
         admin_username = os.environ.get(
             "ADMIN_USERNAME",
             "admin"
@@ -601,10 +835,13 @@ def admin_login():
             "admin123"
         )
 
+
         if (
             username == admin_username
             and password == admin_password
         ):
+
+            session.clear()
 
             session["admin_logged_in"] = True
 
@@ -612,10 +849,12 @@ def admin_login():
                 url_for("admin_dashboard")
             )
 
+
         flash(
             "Invalid admin username or password.",
             "error"
         )
+
 
     return render_template(
         "admin_login.html"
@@ -629,9 +868,11 @@ def admin_login():
 @app.route("/admin/logout")
 def admin_logout():
 
-    session.pop("admin_logged_in", None)
+    session.clear()
 
-    return redirect(url_for("admin_login"))
+    return redirect(
+        url_for("admin_login")
+    )
 
 
 # ============================================================
@@ -641,23 +882,38 @@ def admin_logout():
 @app.route("/admin/dashboard")
 def admin_dashboard():
 
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
+    if not session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin_login")
+        )
+
 
     participants = Participant.query.order_by(
         Participant.registered_at.asc()
     ).all()
 
+
     attempts = Attempt.query.all()
 
+
     attempt_by_participant = {
+
         attempt.participant_id: attempt
+
         for attempt in attempts
+
     }
 
+
     completed = 0
+
     in_progress = 0
+
     not_attempted = 0
+
 
     for participant in participants:
 
@@ -665,57 +921,86 @@ def admin_dashboard():
             participant.id
         )
 
+
         if not attempt:
+
             not_attempted += 1
 
+
         elif attempt.status == "SUBMITTED":
+
             completed += 1
 
+
         else:
+
             in_progress += 1
 
-    # Results sorted by score
+
     completed_attempts = Attempt.query.filter_by(
         status="SUBMITTED"
     ).order_by(
         Attempt.score.desc()
     ).all()
 
+
     return render_template(
         "admin_dashboard.html",
+
         participants=participants,
-        attempt_by_participant=attempt_by_participant,
+
+        attempt_by_participant=
+            attempt_by_participant,
+
         completed=completed,
+
         in_progress=in_progress,
+
         not_attempted=not_attempted,
+
         total=len(participants),
-        completed_attempts=completed_attempts
+
+        completed_attempts=
+            completed_attempts
     )
 
 
 # ============================================================
-# ADMIN VIEW INDIVIDUAL RESULT
+# ADMIN INDIVIDUAL RESULT
 # ============================================================
 
-@app.route("/admin/result/<int:participant_id>")
+@app.route(
+    "/admin/result/<int:participant_id>"
+)
 def admin_result(participant_id):
 
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
+    if not session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin_login")
+        )
+
 
     participant = db.session.get(
         Participant,
         participant_id
     )
 
+
     if not participant:
+
         return "Participant not found", 404
+
 
     attempt = Attempt.query.filter_by(
         participant_id=participant.id
     ).first()
 
+
     answers = []
+
 
     if attempt:
 
@@ -723,16 +1008,20 @@ def admin_result(participant_id):
             attempt_id=attempt.id
         ).all()
 
+
     return render_template(
         "admin_result.html",
+
         participant=participant,
+
         attempt=attempt,
+
         answers=answers
     )
 
 
 # ============================================================
-# ADMIN: DELETE/RESET ATTEMPT
+# ADMIN RESET ATTEMPT
 # ============================================================
 
 @app.route(
@@ -741,30 +1030,43 @@ def admin_result(participant_id):
 )
 def admin_reset(participant_id):
 
-    if not session.get("admin_logged_in"):
-        return redirect(url_for("admin_login"))
+    if not session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin_login")
+        )
+
 
     participant = db.session.get(
         Participant,
         participant_id
     )
 
+
     if not participant:
+
         return "Participant not found", 404
+
 
     attempt = Attempt.query.filter_by(
         participant_id=participant.id
     ).first()
 
+
     if attempt:
 
         db.session.delete(attempt)
+
         db.session.commit()
+
 
     flash(
         "Participant attempt has been reset.",
         "success"
     )
+
 
     return redirect(
         url_for("admin_dashboard")
@@ -783,6 +1085,7 @@ if __name__ == "__main__":
             5000
         )
     )
+
 
     app.run(
         host="0.0.0.0",
