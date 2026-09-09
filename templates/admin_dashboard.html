@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Rajbhasha Exam</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            color: #222;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================== */
+
+        .header {
+
+            background: #222;
+
+            color: white;
+
+            padding: 16px 25px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+
+        .header-title {
+
+            font-size: 21px;
+
+            font-weight: bold;
+        }
+
+
+        .logout {
+
+            color: white;
+
+            text-decoration: none;
+
+            padding: 8px 15px;
+
+            border: 1px solid #777;
+
+            border-radius: 6px;
+
+            font-size: 14px;
+        }
+
+
+        .logout:hover {
+
+            background: #444;
+        }
+
+
+        /* =========================
+           MAIN
+        ========================== */
+
+        .container {
+
+            max-width: 1200px;
+
+            margin: 30px auto;
+
+            padding: 0 20px;
+        }
+
+
+        .welcome {
+
+            margin-bottom: 25px;
+        }
+
+
+        .welcome h1 {
+
+            margin: 0 0 8px;
+
+            font-size: 28px;
+        }
+
+
+        .welcome p {
+
+            margin: 0;
+
+            color: #666;
+        }
+
+
+        /* =========================
+           STAT CARDS
+        ========================== */
+
+        .stats {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 15px;
+
+            margin-bottom: 30px;
+        }
+
+
+        .stat-card {
+
+            background: white;
+
+            border-radius: 10px;
+
+            padding: 22px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .stat-label {
+
+            color: #666;
+
+            font-size: 14px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .stat-number {
+
+            font-size: 32px;
+
+            font-weight: bold;
+        }
+
+
+        /* =========================
+           STATUS COLORS
+        ========================== */
+
+        .completed {
+
+            color: #16803c;
+        }
+
+
+        .in-progress {
+
+            color: #b26a00;
+        }
+
+
+        .not-attempted {
+
+            color: #b00020;
+        }
+
+
+        /* =========================
+           PARTICIPANTS TABLE
+        ========================== */
+
+        .table-card {
+
+            background: white;
+
+            border-radius: 10px;
+
+            padding: 20px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.08);
+
+            overflow-x: auto;
+        }
+
+
+        .table-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin-bottom: 15px;
+        }
+
+
+        .table-header h2 {
+
+            margin: 0;
+
+            font-size: 21px;
+        }
+
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 750px;
+        }
+
+
+        th {
+
+            background: #f1f1f1;
+
+            text-align: left;
+
+            padding: 13px;
+
+            font-size: 14px;
+        }
+
+
+        td {
+
+            padding: 13px;
+
+            border-bottom: 1px solid #e5e5e5;
+
+            font-size: 14px;
+        }
+
+
+        tr:hover {
+
+            background: #fafafa;
+        }
+
+
+        /* =========================
+           STATUS BADGES
+        ========================== */
+
+        .badge {
+
+            display: inline-block;
+
+            padding: 6px 10px;
+
+            border-radius: 20px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .badge-completed {
+
+            background: #e8f5e9;
+
+            color: #16803c;
+        }
+
+
+        .badge-progress {
+
+            background: #fff4df;
+
+            color: #a15c00;
+        }
+
+
+        .badge-not-attempted {
+
+            background: #fdeaea;
+
+            color: #b00020;
+        }
+
+
+        /* =========================
+           SCORE
+        ========================== */
+
+        .score {
+
+            font-weight: bold;
+
+            font-size: 15px;
+        }
+
+
+        /* =========================
+           VIEW BUTTON
+        ========================== */
+
+        .view-button {
+
+            display: inline-block;
+
+            padding: 7px 12px;
+
+            background: #222;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 6px;
+
+            font-size: 12px;
+        }
+
+
+        .view-button:hover {
+
+            background: #444;
+        }
+
+
+        /* =========================
+           EMPTY SCORE
+        ========================== */
+
+        .empty {
+
+            color: #999;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 900px) {
+
+            .stats {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        @media (max-width: 550px) {
+
+            .header {
+
+                padding: 14px 15px;
+            }
+
+
+            .header-title {
+
+                font-size: 17px;
+            }
+
+
+            .container {
+
+                margin-top: 20px;
+
+                padding: 0 12px;
+            }
+
+
+            .stats {
+
+                grid-template-columns: 1fr 1fr;
+
+                gap: 10px;
+            }
+
+
+            .stat-card {
+
+                padding: 15px;
+            }
+
+
+            .stat-number {
+
+                font-size: 25px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     HEADER
+========================== -->
+
+<header class="header">
+
+    <div class="header-title">
+
+        Rajbhasha Exam — Admin
+
+    </div>
+
+
+    <a
+        href="{{ url_for('admin_logout') }}"
+        class="logout"
+    >
+        Logout
+    </a>
+
+</header>
+
+
+
+<!-- =========================
+     MAIN
+========================== -->
+
+<main class="container">
+
+
+    <div class="welcome">
+
+        <h1>
+            Examination Dashboard
+        </h1>
+
+        <p>
+            Monitor participant registration,
+            examination progress and results.
+        </p>
+
+    </div>
+
+
+
+    <!-- =========================
+         STATISTICS
+    ========================== -->
+
+    <div class="stats">
+
+
+        <!-- TOTAL -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Total Registered
+            </div>
+
+            <div class="stat-number">
+                {{ total }}
+            </div>
+
+        </div>
+
+
+        <!-- COMPLETED -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Completed
+            </div>
+
+            <div class="stat-number completed">
+                {{ completed }}
+            </div>
+
+        </div>
+
+
+        <!-- IN PROGRESS -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                In Progress
+            </div>
+
+            <div class="stat-number in-progress">
+                {{ in_progress }}
+            </div>
+
+        </div>
+
+
+        <!-- NOT ATTEMPTED -->
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                Not Attempted
+            </div>
+
+            <div class="stat-number not-attempted">
+                {{ not_attempted }}
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =========================
+         PARTICIPANTS
+    ========================== -->
+
+    <div class="table-card">
+
+
+        <div class="table-header">
+
+            <h2>
+                All Registered Participants
+            </h2>
+
+        </div>
+
+
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        #
+                    </th>
+
+                    <th>
+                        Name
+                    </th>
+
+                    <th>
+                        Registration ID
+                    </th>
+
+                    <th>
+                        Registration Date
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Score
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+            {% for participant in participants %}
+
+                {% set attempt =
+                    attempt_by_participant.get(
+                        participant.id
+                    )
+                %}
+
+
+                <tr>
+
+
+                    <!-- NUMBER -->
+
+                    <td>
+                        {{ loop.index }}
+                    </td>
+
+
+                    <!-- NAME -->
+
+                    <td>
+
+                        <strong>
+                            {{ participant.name }}
+                        </strong>
+
+                    </td>
+
+
+                    <!-- REGISTRATION ID -->
+
+                    <td>
+                        {{ participant.registration_id }}
+                    </td>
+
+
+                    <!-- REGISTRATION DATE -->
+
+                    <td>
+
+                        {% if participant.registered_at %}
+
+                            {{ participant.registered_at.strftime(
+                                '%d-%m-%Y %I:%M %p'
+                            ) }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- STATUS -->
+
+                    <td>
+
+
+                        {% if not attempt %}
+
+                            <span class="
+                                badge
+                                badge-not-attempted
+                            ">
+
+                                NOT ATTEMPTED
+
+                            </span>
+
+
+                        {% elif attempt.status == "SUBMITTED" %}
+
+                            <span class="
+                                badge
+                                badge-completed
+                            ">
+
+                                COMPLETED
+
+                            </span>
+
+
+                        {% else %}
+
+                            <span class="
+                                badge
+                                badge-progress
+                            ">
+
+                                IN PROGRESS
+
+                            </span>
+
+                        {% endif %}
+
+
+                    </td>
+
+
+                    <!-- SCORE -->
+
+                    <td>
+
+                        {% if attempt
+                              and attempt.status == "SUBMITTED" %}
+
+                            <span class="score">
+
+                                {{ attempt.score }}
+                                /
+                                {{ attempt.total_questions }}
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="empty">
+                                —
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- ACTION -->
+
+                    <td>
+
+                        <a
+                            href="{{
+                                url_for(
+                                    'admin_result',
+                                    participant_id=participant.id
+                                )
+                            }}"
+                            class="view-button"
+                        >
+
+                            View
+
+                        </a>
+
+                    </td>
+
+
+                </tr>
+
+
+            {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+
+    </div>
+
+
+</main>
+
+
+</body>
+
+</html>
