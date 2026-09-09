@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Rajbhasha Exam</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            color: #222;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================== */
+
+        .header {
+
+            background: #222;
+
+            color: white;
+
+            padding: 15px 25px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 100;
+        }
+
+
+        .header-title {
+
+            font-size: 20px;
+
+            font-weight: bold;
+        }
+
+
+        .participant {
+
+            font-size: 14px;
+
+            text-align: right;
+        }
+
+
+        /* =========================
+           MAIN CONTAINER
+        ========================== */
+
+        .container {
+
+            max-width: 900px;
+
+            margin: 25px auto;
+
+            padding: 0 15px;
+        }
+
+
+        /* =========================
+           INSTRUCTIONS
+        ========================== */
+
+        .instructions {
+
+            background: white;
+
+            padding: 18px;
+
+            border-radius: 10px;
+
+            margin-bottom: 20px;
+
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+
+        .instructions h3 {
+
+            margin-top: 0;
+        }
+
+
+        .instructions ul {
+
+            margin-bottom: 0;
+
+            padding-left: 20px;
+
+            line-height: 1.7;
+        }
+
+
+        /* =========================
+           QUESTION CARD
+        ========================== */
+
+        .question-card {
+
+            background: white;
+
+            padding: 25px;
+
+            margin-bottom: 20px;
+
+            border-radius: 10px;
+
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+
+        .question-number {
+
+            font-weight: bold;
+
+            color: #555;
+
+            margin-bottom: 10px;
+        }
+
+
+        .question-text {
+
+            font-size: 19px;
+
+            font-weight: bold;
+
+            line-height: 1.5;
+
+            margin-bottom: 20px;
+        }
+
+
+        /* =========================
+           OPTIONS
+        ========================== */
+
+        .option {
+
+            display: block;
+
+            border: 1px solid #d0d0d0;
+
+            border-radius: 8px;
+
+            padding: 13px 15px;
+
+            margin-bottom: 10px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+
+            background: #fff;
+        }
+
+
+        .option:hover {
+
+            background: #f5f5f5;
+        }
+
+
+        .option input {
+
+            margin-right: 10px;
+        }
+
+
+        /* =========================
+           SUBMIT SECTION
+        ========================== */
+
+        .submit-section {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            text-align: center;
+
+            margin-bottom: 40px;
+
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+
+        .warning {
+
+            color: #a33;
+
+            font-weight: bold;
+
+            margin-bottom: 15px;
+        }
+
+
+        .submit-button {
+
+            background: #222;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 8px;
+
+            padding: 15px 35px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+
+        .submit-button:hover {
+
+            background: #444;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================== */
+
+        @media (max-width: 600px) {
+
+            .header {
+
+                padding: 12px 15px;
+            }
+
+
+            .header-title {
+
+                font-size: 16px;
+            }
+
+
+            .participant {
+
+                font-size: 12px;
+            }
+
+
+            .container {
+
+                margin-top: 15px;
+            }
+
+
+            .question-card {
+
+                padding: 18px;
+            }
+
+
+            .question-text {
+
+                font-size: 17px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     HEADER
+========================== -->
+
+<div class="header">
+
+    <div class="header-title">
+
+        Rajbhasha Objective Examination
+
+    </div>
+
+
+    <div class="participant">
+
+        {{ participant.name }}
+
+        <br>
+
+        {{ participant.registration_id }}
+
+    </div>
+
+</div>
+
+
+
+<div class="container">
+
+
+    <!-- =========================
+         INSTRUCTIONS
+    ========================== -->
+
+    <div class="instructions">
+
+        <h3>Instructions</h3>
+
+        <ul>
+
+            <li>
+                There are {{ questions|length }} objective questions.
+            </li>
+
+            <li>
+                Each question has four options.
+            </li>
+
+            <li>
+                Select one answer for each question.
+            </li>
+
+            <li>
+                Your answers will be saved when you submit the test.
+            </li>
+
+            <li>
+                Once submitted, the test cannot be changed.
+            </li>
+
+        </ul>
+
+    </div>
+
+
+
+    <!-- =========================
+         QUIZ FORM
+    ========================== -->
+
+    <form method="POST"
+          id="quizForm">
+
+
+        {% for question in questions %}
+
+        <div class="question-card">
+
+
+            <div class="question-number">
+
+                Question {{ loop.index }}
+
+            </div>
+
+
+            <div class="question-text">
+
+                {{ question.question_text }}
+
+            </div>
+
+
+            <!-- OPTION A -->
+
+            <label class="option">
+
+                <input
+                    type="radio"
+                    name="question_{{ question.id }}"
+                    value="A"
+                >
+
+                <strong>A.</strong>
+
+                {{ question.option_a }}
+
+            </label>
+
+
+            <!-- OPTION B -->
+
+            <label class="option">
+
+                <input
+                    type="radio"
+                    name="question_{{ question.id }}"
+                    value="B"
+                >
+
+                <strong>B.</strong>
+
+                {{ question.option_b }}
+
+            </label>
+
+
+            <!-- OPTION C -->
+
+            <label class="option">
+
+                <input
+                    type="radio"
+                    name="question_{{ question.id }}"
+                    value="C"
+                >
+
+                <strong>C.</strong>
+
+                {{ question.option_c }}
+
+            </label>
+
+
+            <!-- OPTION D -->
+
+            <label class="option">
+
+                <input
+                    type="radio"
+                    name="question_{{ question.id }}"
+                    value="D"
+                >
+
+                <strong>D.</strong>
+
+                {{ question.option_d }}
+
+            </label>
+
+
+        </div>
+
+        {% endfor %}
+
+
+
+        <!-- =========================
+             SUBMIT
+        ========================== -->
+
+        <div class="submit-section">
+
+            <div class="warning">
+
+                ⚠️ Please check your answers before submitting.
+
+            </div>
+
+
+            <p>
+
+                Once you click <strong>Submit Test</strong>,
+                you cannot change your answers.
+
+            </p>
+
+
+            <button
+                type="button"
+                class="submit-button"
+                onclick="confirmSubmit()"
+            >
+
+                Submit Test
+
+            </button>
+
+
+            <input
+                type="hidden"
+                name="submit_test"
+                id="submitTest"
+                value="no"
+            >
+
+        </div>
+
+
+    </form>
+
+
+</div>
+
+
+
+<script>
+
+function confirmSubmit() {
+
+    const form = document.getElementById("quizForm");
+
+    const submitField =
+        document.getElementById("submitTest");
+
+
+    const totalQuestions =
+        document.querySelectorAll(
+            ".question-card"
+        ).length;
+
+
+    const answeredQuestions =
+        document.querySelectorAll(
+            "input[type='radio']:checked"
+        ).length;
+
+
+    const unanswered =
+        totalQuestions - answeredQuestions;
+
+
+    if (unanswered > 0) {
+
+        const message =
+            "You have not answered " +
+            unanswered +
+            " question(s).\n\n" +
+            "Are you sure you want to submit?";
+
+
+        if (!confirm(message)) {
+
+            return;
+        }
+
+    } else {
+
+        const message =
+            "You have answered all " +
+            totalQuestions +
+            " questions.\n\n" +
+            "Are you sure you want to submit the test?";
+
+
+        if (!confirm(message)) {
+
+            return;
+        }
+
+    }
+
+
+    submitField.value = "yes";
+
+    form.submit();
+
+}
+
+</script>
+
+
+</body>
+
+</html>
