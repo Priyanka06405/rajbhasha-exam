@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Participant Result - Rajbhasha Exam</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #f4f6f8;
+
+            color: #222;
+        }
+
+
+        /* =========================
+           HEADER
+        ========================== */
+
+        .header {
+
+            background: #222;
+
+            color: white;
+
+            padding: 16px 25px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+
+        .header-title {
+
+            font-size: 20px;
+
+            font-weight: bold;
+        }
+
+
+        .back {
+
+            color: white;
+
+            text-decoration: none;
+
+            border: 1px solid #777;
+
+            padding: 8px 14px;
+
+            border-radius: 6px;
+
+            font-size: 14px;
+        }
+
+
+        .back:hover {
+
+            background: #444;
+        }
+
+
+        /* =========================
+           MAIN
+        ========================== */
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 30px auto;
+
+            padding: 0 20px;
+        }
+
+
+        /* =========================
+           PARTICIPANT CARD
+        ========================== */
+
+        .participant-card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            margin-bottom: 20px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .participant-card h1 {
+
+            margin: 0 0 20px;
+
+            font-size: 25px;
+        }
+
+
+        .details {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 15px;
+        }
+
+
+        .detail {
+
+            background: #f7f7f7;
+
+            padding: 12px;
+
+            border-radius: 7px;
+        }
+
+
+        .detail-label {
+
+            font-size: 12px;
+
+            color: #777;
+
+            margin-bottom: 5px;
+        }
+
+
+        .detail-value {
+
+            font-weight: bold;
+
+            font-size: 15px;
+        }
+
+
+        /* =========================
+           RESULT
+        ========================== */
+
+        .result-card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            margin-bottom: 20px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.08);
+
+            text-align: center;
+        }
+
+
+        .result-title {
+
+            color: #666;
+
+            font-size: 14px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .score {
+
+            font-size: 40px;
+
+            font-weight: bold;
+
+            margin-bottom: 5px;
+        }
+
+
+        .percentage {
+
+            color: #555;
+
+            font-size: 17px;
+        }
+
+
+        .status {
+
+            margin-top: 15px;
+
+            font-weight: bold;
+        }
+
+
+        .submitted {
+
+            color: #16803c;
+        }
+
+
+        .not-submitted {
+
+            color: #b26a00;
+        }
+
+
+        /* =========================
+           ANSWERS
+        ========================== */
+
+        .answers-card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.08);
+        }
+
+
+        .answers-card h2 {
+
+            margin-top: 0;
+
+            font-size: 21px;
+        }
+
+
+        .answer {
+
+            padding: 18px 0;
+
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+
+        .answer:last-child {
+
+            border-bottom: none;
+        }
+
+
+        .question {
+
+            font-weight: bold;
+
+            line-height: 1.5;
+
+            margin-bottom: 10px;
+        }
+
+
+        .answer-line {
+
+            font-size: 14px;
+
+            margin: 5px 0;
+        }
+
+
+        .correct {
+
+            color: #16803c;
+
+            font-weight: bold;
+        }
+
+
+        .wrong {
+
+            color: #b00020;
+
+            font-weight: bold;
+        }
+
+
+        .unanswered {
+
+            color: #777;
+
+            font-weight: bold;
+        }
+
+
+        /* =========================
+           RESET BUTTON
+        ========================== */
+
+        .reset-section {
+
+            margin-top: 25px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #ddd;
+
+            text-align: right;
+        }
+
+
+        .reset-button {
+
+            background: #b00020;
+
+            color: white;
+
+            border: none;
+
+            padding: 10px 16px;
+
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-weight: bold;
+        }
+
+
+        .reset-button:hover {
+
+            background: #850018;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 600px) {
+
+            .header {
+
+                padding: 13px 15px;
+            }
+
+
+            .header-title {
+
+                font-size: 16px;
+            }
+
+
+            .container {
+
+                padding: 0 12px;
+
+                margin-top: 20px;
+            }
+
+
+            .details {
+
+                grid-template-columns: 1fr;
+            }
+
+
+            .participant-card,
+            .result-card,
+            .answers-card {
+
+                padding: 18px;
+            }
+
+
+            .score {
+
+                font-size: 34px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================
+     HEADER
+========================== -->
+
+<header class="header">
+
+    <div class="header-title">
+
+        Rajbhasha Exam — Participant Result
+
+    </div>
+
+
+    <a
+        href="{{ url_for('admin_dashboard') }}"
+        class="back"
+    >
+
+        ← Dashboard
+
+    </a>
+
+</header>
+
+
+
+<main class="container">
+
+
+    <!-- =========================
+         PARTICIPANT INFORMATION
+    ========================== -->
+
+    <div class="participant-card">
+
+        <h1>
+            Participant Information
+        </h1>
+
+
+        <div class="details">
+
+
+            <div class="detail">
+
+                <div class="detail-label">
+                    Name
+                </div>
+
+                <div class="detail-value">
+                    {{ participant.name }}
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-label">
+                    Registration ID
+                </div>
+
+                <div class="detail-value">
+                    {{ participant.registration_id }}
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-label">
+                    Registered On
+                </div>
+
+                <div class="detail-value">
+
+                    {% if participant.registered_at %}
+
+                        {{ participant.registered_at.strftime(
+                            '%d-%m-%Y %I:%M %p'
+                        ) }}
+
+                    {% else %}
+
+                        —
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-label">
+                    Test Status
+                </div>
+
+                <div class="detail-value">
+
+                    {% if attempt %}
+
+                        {{ attempt.status }}
+
+                    {% else %}
+
+                        NOT ATTEMPTED
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================
+         RESULT
+    ========================== -->
+
+    <div class="result-card">
+
+        <div class="result-title">
+            Examination Result
+        </div>
+
+
+        {% if attempt and attempt.status == "SUBMITTED" %}
+
+
+            <div class="score">
+
+                {{ attempt.score }}
+                /
+                {{ attempt.total_questions }}
+
+            </div>
+
+
+            {% if attempt.total_questions > 0 %}
+
+                <div class="percentage">
+
+                    Percentage:
+
+                    {{
+                        "%.2f"|format(
+                            (
+                                attempt.score /
+                                attempt.total_questions
+                            ) * 100
+                        )
+                    }}%
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="status submitted">
+
+                ✓ TEST COMPLETED
+
+            </div>
+
+
+            {% if attempt.submitted_at %}
+
+                <p>
+
+                    Submitted:
+
+                    {{ attempt.submitted_at.strftime(
+                        '%d-%m-%Y %I:%M %p'
+                    ) }}
+
+                </p>
+
+            {% endif %}
+
+
+        {% elif attempt %}
+
+
+            <div class="score">
+                —
+            </div>
+
+
+            <div class="status not-submitted">
+
+                ⏳ TEST IN PROGRESS
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="score">
+                —
+            </div>
+
+
+            <div class="status not-submitted">
+
+                NOT ATTEMPTED
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+
+    <!-- =========================
+         ANSWERS
+    ========================== -->
+
+    {% if attempt and attempt.status == "SUBMITTED" %}
+
+        <div class="answers-card">
+
+            <h2>
+                Answer Details
+            </h2>
+
+
+            {% for answer in answers %}
+
+                {% set question =
+                    answer.question_id
+                %}
+
+
+                <div class="answer">
+
+
+                    <div class="question">
+
+                        Question {{ loop.index }}
+
+                    </div>
+
+
+                    <div class="answer-line">
+
+                        Selected Answer:
+
+                        {% if answer.selected_answer %}
+
+                            <strong>
+                                {{ answer.selected_answer }}
+                            </strong>
+
+                        {% else %}
+
+                            <span class="unanswered">
+                                Not Answered
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    {% if answer.is_correct %}
+
+                        <div class="answer-line correct">
+
+                            ✓ Correct
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="answer-line wrong">
+
+                            ✗ Incorrect
+
+                        </div>
+
+                    {% endif %}
+
+
+                </div>
+
+
+            {% endfor %}
+
+
+            <!-- RESET -->
+
+            <div class="reset-section">
+
+                <form
+                    method="POST"
+                    action="{{
+                        url_for(
+                            'admin_reset',
+                            participant_id=participant.id
+                        )
+                    }}"
+                    onsubmit="
+                        return confirm(
+                            'Are you sure you want to reset this participant\\'s attempt?'
+                        );
+                    "
+                >
+
+                    <button
+                        type="submit"
+                        class="reset-button"
+                    >
+
+                        Reset Attempt
+
+                    </button>
+
+                </form>
+
+            </div>
+
+
+        </div>
+
+    {% endif %}
+
+
+</main>
+
+
+</body>
+
+</html>
