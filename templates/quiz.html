@@ -3,74 +3,71 @@
 {% block content %}
 
 <style>
-    .quiz-container {
-        max-width: 900px;
-        margin: 30px auto;
-    }
 
     .quiz-header {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        margin-bottom: 25px;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        background: #222;
+        color: white;
+        padding: 20px 30px;
+        margin: -30px -30px 30px -30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .quiz-header h1 {
-        margin: 0 0 10px 0;
-        font-size: 30px;
+        margin: 0;
+        font-size: 28px;
     }
 
     .participant-name {
-        font-size: 18px;
-        color: #555;
+        font-size: 16px;
     }
 
     .question-card {
         background: white;
-        padding: 25px;
-        margin-bottom: 20px;
         border-radius: 15px;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
 
     .question-number {
+        color: #64748b;
+        font-size: 17px;
         font-weight: bold;
-        font-size: 18px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .question-text {
-        font-size: 19px;
-        font-weight: 600;
-        margin-bottom: 20px;
+        font-size: 22px;
+        font-weight: bold;
         line-height: 1.5;
-    }
-
-    .options {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+        margin-bottom: 22px;
+        color: #111827;
     }
 
     .option {
-        border: 1px solid #d0d0d0;
+        display: block;
+        border: 2px solid #e5e7eb;
         border-radius: 10px;
-        padding: 14px 16px;
+        padding: 15px 18px;
+        margin-bottom: 12px;
         cursor: pointer;
+        font-size: 18px;
         transition: 0.2s;
-        background: #fafafa;
     }
 
     .option:hover {
-        background: #f0f0f0;
+        background: #f8fafc;
+        border-color: #94a3b8;
     }
 
     .option input {
-        margin-right: 10px;
+        margin-right: 12px;
+        transform: scale(1.2);
     }
 
-    .option-label {
+    .option-letter {
         font-weight: bold;
         margin-right: 8px;
     }
@@ -79,227 +76,155 @@
         background: white;
         padding: 25px;
         border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         text-align: center;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        margin-top: 30px;
     }
 
-    .submit-button {
+    .submit-btn {
         background: #222;
         color: white;
         border: none;
-        padding: 15px 40px;
+        padding: 15px 45px;
         border-radius: 10px;
         font-size: 18px;
         font-weight: bold;
         cursor: pointer;
     }
 
-    .submit-button:hover {
-        background: #000;
+    .submit-btn:hover {
+        background: #444;
     }
+
+    .progress-text {
+        color: #64748b;
+        margin-bottom: 20px;
+        font-size: 16px;
+    }
+
 </style>
 
 
-<div class="quiz-container">
+<!-- HEADER -->
 
-    <div class="quiz-header">
-        <h1>Rajbhasha Exam</h1>
+<div class="quiz-header">
 
-        <div class="participant-name">
-            Participant:
-            <strong>{{ participant.name }}</strong>
-        </div>
+    <h1>
+        Rajbhasha Exam
+    </h1>
+
+    <div class="participant-name">
+
+        {{ participant.name }}
+
+        &nbsp; | &nbsp;
+
+        <a
+            href="{{ url_for('logout') }}"
+            style="color:white;"
+        >
+            Logout
+        </a>
+
     </div>
-
-
-    <form method="POST" id="quizForm">
-
-        {% for question in questions %}
-
-        <div class="question-card">
-
-            <div class="question-number">
-                Question {{ loop.index }}
-            </div>
-
-            <div class="question-text">
-                {{ question.question_text }}
-            </div>
-
-
-            <div class="options">
-
-                <!--
-                    IMPORTANT:
-                    The VALUE remains the original answer letter.
-                    Only the visual order is shuffled.
-                -->
-
-                <label class="option">
-                    <input
-                        type="radio"
-                        name="question_{{ question.id }}"
-                        value="A"
-                    >
-                    <span class="option-label">A.</span>
-                    <span class="option-text">
-                        {{ question.option_a }}
-                    </span>
-                </label>
-
-
-                <label class="option">
-                    <input
-                        type="radio"
-                        name="question_{{ question.id }}"
-                        value="B"
-                    >
-                    <span class="option-label">B.</span>
-                    <span class="option-text">
-                        {{ question.option_b }}
-                    </span>
-                </label>
-
-
-                <label class="option">
-                    <input
-                        type="radio"
-                        name="question_{{ question.id }}"
-                        value="C"
-                    >
-                    <span class="option-label">C.</span>
-                    <span class="option-text">
-                        {{ question.option_c }}
-                    </span>
-                </label>
-
-
-                <label class="option">
-                    <input
-                        type="radio"
-                        name="question_{{ question.id }}"
-                        value="D"
-                    >
-                    <span class="option-label">D.</span>
-                    <span class="option-text">
-                        {{ question.option_d }}
-                    </span>
-                </label>
-
-            </div>
-
-        </div>
-
-        {% endfor %}
-
-
-        <div class="submit-section">
-
-            <p>
-                Please check all your answers before submitting.
-            </p>
-
-            <button
-                type="submit"
-                name="submit_test"
-                value="yes"
-                class="submit-button"
-                onclick="return confirmSubmit();"
-            >
-                Submit Test
-            </button>
-
-        </div>
-
-    </form>
 
 </div>
 
 
+<!-- PROGRESS -->
+
+<div class="progress-text">
+
+    Total Questions:
+    <strong>{{ questions|length }}</strong>
+
+</div>
+
+
+<form
+    method="POST"
+    onsubmit="return confirmSubmit();"
+>
+
+
+    <!-- QUESTIONS -->
+
+    {% for item in questions %}
+
+        <div class="question-card">
+
+            <div class="question-number">
+
+                Question {{ loop.index }}
+
+            </div>
+
+
+            <div class="question-text">
+
+                {{ item.question.question_text }}
+
+            </div>
+
+
+            <!-- OPTIONS -->
+
+            {% for option in item.options %}
+
+                <label class="option">
+
+                    <input
+                        type="radio"
+                        name="question_{{ item.question.id }}"
+                        value="{{ option.letter }}"
+                    >
+
+                    <span class="option-letter">
+                        {{ option.letter }}.
+                    </span>
+
+                    {{ option.text }}
+
+                </label>
+
+            {% endfor %}
+
+        </div>
+
+    {% endfor %}
+
+
+    <!-- SUBMIT -->
+
+    <div class="submit-section">
+
+        <p>
+            Please review your answers before submitting.
+        </p>
+
+        <button
+            type="submit"
+            class="submit-btn"
+        >
+            Submit Examination
+        </button>
+
+    </div>
+
+</form>
+
+
 <script>
-
-function shuffleOptions() {
-
-    const questionCards =
-        document.querySelectorAll(".question-card");
-
-    questionCards.forEach(function(card) {
-
-        const optionsContainer =
-            card.querySelector(".options");
-
-        if (!optionsContainer) {
-            return;
-        }
-
-        const options =
-            Array.from(
-                optionsContainer.children
-            );
-
-        // Fisher-Yates shuffle
-        for (
-            let i = options.length - 1;
-            i > 0;
-            i--
-        ) {
-
-            const j =
-                Math.floor(
-                    Math.random() * (i + 1)
-                );
-
-            [
-                options[i],
-                options[j]
-            ] = [
-                options[j],
-                options[i]
-            ];
-        }
-
-        options.forEach(function(option, index) {
-
-            const label =
-                option.querySelector(
-                    ".option-label"
-                );
-
-            const newLetter =
-                String.fromCharCode(
-                    65 + index
-                );
-
-            label.textContent =
-                newLetter + ".";
-
-            optionsContainer.appendChild(
-                option
-            );
-
-        });
-
-    });
-
-}
-
 
 function confirmSubmit() {
 
     return confirm(
-        "Are you sure you want to submit the examination?\n\n" +
-        "You will not be able to change your answers after submission."
+        "Are you sure you want to submit the examination? You cannot change your answers after submission."
     );
 
 }
 
-
-// Shuffle options when the page loads
-window.addEventListener(
-    "DOMContentLoaded",
-    shuffleOptions
-);
-
 </script>
+
 
 {% endblock %}
