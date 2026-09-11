@@ -994,11 +994,29 @@ def submitted():
 # ADMIN LOGIN
 # =========================================================
 
-@app.route(
-    "/admin",
-    methods=["GET", "POST"]
-)
+@app.route("/admin", methods=["GET", "POST"])
 def admin_login():
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        # Admin credentials
+        ADMIN_USERNAME = "admin"
+        ADMIN_PASSWORD = "admin123"
+
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+
+            session["admin_logged_in"] = True
+
+            return redirect(
+                url_for("admin_dashboard")
+            )
+
+        flash("Invalid admin username or password.")
+
+    return render_template("admin_login.html")
 
     if request.method == "POST":
 
