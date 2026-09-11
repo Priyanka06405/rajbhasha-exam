@@ -23,31 +23,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get(
+app.secret_key = os.environ.get(
     "SECRET_KEY",
-    "rajbhasha-exam-secret-key-change-this"
+    "rajbhasha-secret-key-change-later"
 )
 
-# ---------------------------------------------------------
-# DATABASE
-# ---------------------------------------------------------
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-database_url = os.environ.get("DATABASE_URL")
-
-if database_url:
+if DATABASE_URL:
     # Render/PostgreSQL sometimes gives postgres://
-    # SQLAlchemy requires postgresql://
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace(
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace(
             "postgres://",
             "postgresql://",
             1
         )
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
 else:
-    # Local/testing database
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///exam.db"
 
 
@@ -61,17 +55,12 @@ db = SQLAlchemy(app)
 # =========================================================
 
 class Participant(db.Model):
-    __tablename__ = "participants"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    name = db.Column(
-        db.String(200),
-        nullable=False
-    )
+    name = db.Column(db.String(200), nullable=False)
 
-    # Internally called registration_id.
-    # On the website this is displayed as Personal Number.
+    # This is the Personal Number shown to the participant
     registration_id = db.Column(
         db.String(100),
         unique=True,
@@ -91,18 +80,13 @@ class Participant(db.Model):
     attempts = db.relationship(
         "Attempt",
         backref="participant",
-        lazy=True,
         cascade="all, delete-orphan"
     )
 
 
 class Question(db.Model):
-    __tablename__ = "questions"
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
+    id = db.Column(db.Integer, primary_key=True)
 
     question_text = db.Column(
         db.Text,
@@ -129,6 +113,7 @@ class Question(db.Model):
         nullable=False
     )
 
+    # Stores A / B / C / D
     correct_answer = db.Column(
         db.String(1),
         nullable=False
@@ -136,7 +121,6 @@ class Question(db.Model):
 
 
 class Attempt(db.Model):
-    __tablename__ = "attempts"
 
     id = db.Column(
         db.Integer,
@@ -145,7 +129,7 @@ class Attempt(db.Model):
 
     participant_id = db.Column(
         db.Integer,
-        db.ForeignKey("participants.id"),
+        db.ForeignKey("participant.id"),
         nullable=False
     )
 
@@ -161,7 +145,7 @@ class Attempt(db.Model):
 
     status = db.Column(
         db.String(30),
-        default="IN_PROGRESS"
+        default="in_progress"
     )
 
     score = db.Column(
@@ -174,8 +158,7 @@ class Attempt(db.Model):
         default=0
     )
 
-    # Stores answers such as:
-    # {"1": "A", "2": "C", "3": "B"}
+    # Stores question order and answer-position mapping
     answers = db.Column(
         db.JSON,
         default=dict
@@ -184,13 +167,11 @@ class Attempt(db.Model):
     answer_records = db.relationship(
         "Answer",
         backref="attempt",
-        lazy=True,
         cascade="all, delete-orphan"
     )
 
 
 class Answer(db.Model):
-    __tablename__ = "answers"
 
     id = db.Column(
         db.Integer,
@@ -199,16 +180,19 @@ class Answer(db.Model):
 
     attempt_id = db.Column(
         db.Integer,
-        db.ForeignKey("attempts.id"),
+        db.ForeignKey("attempt.id"),
         nullable=False
     )
 
     question_id = db.Column(
         db.Integer,
-        db.ForeignKey("questions.id"),
+        db.ForeignKey("question.id"),
         nullable=False
     )
 
+    # IMPORTANT:
+    # This stores the DISPLAYED answer letter
+    # that the participant actually clicked.
     selected_answer = db.Column(
         db.String(1),
         nullable=True
@@ -224,122 +208,115 @@ class Answer(db.Model):
 # QUESTION LOADING
 # =========================================================
 
-def read_questions_from_csv():
-    """
-    Read all questions from questions.csv.
-    Returns a list of dictionaries.
-    """
-
-    questions = []
-
-    if not os.path.exists("questions.csv"):
-        print("WARNING: questions.csv not found.")
-        return questions
-
-    with open(
-        "questions.csv",
-        "r",
-        encoding="utf-8-sig"
-    ) as file:
-
-        reader = csv.DictReader(file)
-
-        for row in reader:
-
-            question_text = row.get("question", "").strip()
-            option_a = row.get("option_a", "").strip()
-            option_b = row.get("option_b", "").strip()
-            option_c = row.get("option_c", "").strip()
-            option_d = row.get("option_d", "").strip()
-            correct_answer = row.get(
-                "correct_answer",
-                ""
-            ).strip().upper()
-
-            if not question_text:
-                continue
-
-            if not option_a:
-                continue
-
-            if not option_b:
-                continue
-
-            if not option_c:
-                continue
-
-            if not option_d:
-                continue
-
-            if correct_answer not in ["A", "B", "C", "D"]:
-                print(
-                    "WARNING: Invalid correct answer:",
-                    correct_answer
-                )
-                continue
-
-            questions.append({
-                "question": question_text,
-                "option_a": option_a,
-                "option_b": option_b,
-                "option_c": option_c,
-                "option_d": option_d,
-                "correct_answer": correct_answer
-            })
-
-    return questions
-
-
 def sync_questions():
-    """
-    Synchronize the database with questions.csv.
 
-    If the CSV question count is different from the database,
-    the existing questions are replaced with the CSV questions.
+    csv_file = "questions.csv"
 
-    This is useful when we replace the sample 3 questions
-    with the final 60 questions.
-    """
-
-    csv_questions = read_questions_from_csv()
-
-    if not csv_questions:
-        print("No questions found in questions.csv.")
+    if not os.path.exists(csv_file):
+        print("questions.csv not found.")
         return
 
-    database_count = Question.query.count()
-    csv_count = len(csv_questions)
+    try:
 
-    print(
-        f"Database questions: {database_count}"
-    )
+        with open(
+            csv_file,
+            "r",
+            encoding="utf-8-sig"
+        ) as file:
 
-    print(
-        f"CSV questions: {csv_count}"
-    )
+            reader = csv.DictReader(file)
 
-    # If counts are different, reload everything.
-    if database_count != csv_count:
+            rows = list(reader)
+
+        if not rows:
+            print("questions.csv is empty.")
+            return
+
+        # -------------------------------------------------
+        # If the number of questions is different,
+        # reload all questions.
+        # -------------------------------------------------
+
+        database_count = Question.query.count()
+
+        if database_count == len(rows):
+            print(
+                f"Question database already contains "
+                f"{database_count} questions."
+            )
+            return
 
         print(
-            "Question count changed. "
-            "Reloading questions..."
+            f"Loading {len(rows)} questions from CSV..."
         )
 
-        # Delete existing questions
         Question.query.delete()
 
-        db.session.commit()
+        for row in rows:
 
-        for item in csv_questions:
+            question_text = (
+                row.get("question")
+                or row.get("Question")
+                or row.get("question_text")
+                or ""
+            ).strip()
+
+            option_a = (
+                row.get("option_a")
+                or row.get("A")
+                or row.get("(A)")
+                or ""
+            ).strip()
+
+            option_b = (
+                row.get("option_b")
+                or row.get("B")
+                or row.get("(B)")
+                or ""
+            ).strip()
+
+            option_c = (
+                row.get("option_c")
+                or row.get("C")
+                or row.get("(C)")
+                or ""
+            ).strip()
+
+            option_d = (
+                row.get("option_d")
+                or row.get("D")
+                or row.get("(D)")
+                or ""
+            ).strip()
+
+            correct_answer = (
+                row.get("correct_answer")
+                or row.get("answer")
+                or row.get("correct")
+                or ""
+            ).strip().upper()
+
+            # Handle forms such as:
+            # (A), A, (क), क
+            if correct_answer in ["क", "(क)"]:
+                correct_answer = "A"
+
+            elif correct_answer in ["ख", "(ख)"]:
+                correct_answer = "B"
+
+            elif correct_answer in ["ग", "(ग)"]:
+                correct_answer = "C"
+
+            elif correct_answer in ["घ", "(घ)"]:
+                correct_answer = "D"
 
             question = Question(
-                question_text=item["question"],
-                option_a=item["option_a"],
-                option_b=item["option_b"],
-                option_c=item["option_c"],
-                option_d=item["option_d"],
-                correct_answer=item["correct_answer"]
+                question_text=question_text,
+                option_a=option_a,
+                option_b=option_b,
+                option_c=option_c,
+                option_d=option_d,
+                correct_answer=correct_answer
             )
 
             db.session.add(question)
@@ -347,13 +324,16 @@ def sync_questions():
         db.session.commit()
 
         print(
-            f"Questions loaded: {csv_count}"
+            f"Successfully loaded {len(rows)} questions."
         )
 
-    else:
+    except Exception as e:
+
+        db.session.rollback()
+
         print(
-            "Question count matches CSV. "
-            "No reload required."
+            "Error loading questions:",
+            e
         )
 
 
@@ -367,28 +347,7 @@ def initialize_database():
 
         db.create_all()
 
-        print("")
-        print("==============================")
-        print("DATABASE TABLES READY")
-        print("==============================")
-
         sync_questions()
-
-        print("")
-        print(
-            f"Participants: {Participant.query.count()}"
-        )
-
-        print(
-            f"Questions: {Question.query.count()}"
-        )
-
-        print("==============================")
-        print("")
-
-
-# Automatically initialize database
-initialize_database()
 
 
 # =========================================================
@@ -398,9 +357,10 @@ initialize_database()
 @app.route("/")
 def home():
 
-    return render_template(
-        "login.html"
-    )
+    if session.get("participant_id"):
+        return redirect(url_for("start_exam"))
+
+    return redirect(url_for("login"))
 
 
 # =========================================================
@@ -430,68 +390,29 @@ def register():
             ""
         )
 
-        # ---------------------------------------------
-        # Validate fields
-        # ---------------------------------------------
+        if not name or not registration_id or not password:
 
-        if not name:
             flash(
-                "Please enter your full name."
+                "Please fill all fields."
             )
 
             return redirect(
                 url_for("register")
             )
 
-        if not registration_id:
-            flash(
-                "Please enter your Personal Number."
-            )
-
-            return redirect(
-                url_for("register")
-            )
-
-        if not password:
-            flash(
-                "Please create a password."
-            )
-
-            return redirect(
-                url_for("register")
-            )
-
-        if len(password) < 4:
-            flash(
-                "Password must be at least 4 characters."
-            )
-
-            return redirect(
-                url_for("register")
-            )
-
-        # ---------------------------------------------
-        # Check duplicate Personal Number
-        # ---------------------------------------------
-
-        existing_participant = Participant.query.filter_by(
+        existing = Participant.query.filter_by(
             registration_id=registration_id
         ).first()
 
-        if existing_participant:
+        if existing:
 
             flash(
-                "This Personal Number is already registered. "
-                "Please login instead."
+                "This Personal Number is already registered. Please login."
             )
 
             return redirect(
                 url_for("login")
             )
-
-        # ---------------------------------------------
-        # Create participant
-        # ---------------------------------------------
 
         participant = Participant(
             name=name,
@@ -506,8 +427,7 @@ def register():
         db.session.commit()
 
         flash(
-            "Registration successful. "
-            "Please login to continue."
+            "Registration successful. Please login."
         )
 
         return redirect(
@@ -545,40 +465,24 @@ def login():
             registration_id=registration_id
         ).first()
 
-        if participant is None:
-
-            flash(
-                "Personal Number not found. "
-                "Please register first."
+        if (
+            participant
+            and check_password_hash(
+                participant.password_hash,
+                password
             )
-
-            return redirect(
-                url_for("login")
-            )
-
-        if not check_password_hash(
-            participant.password_hash,
-            password
         ):
 
-            flash(
-                "Incorrect password."
-            )
+            session.clear()
+
+            session["participant_id"] = participant.id
 
             return redirect(
-                url_for("login")
+                url_for("start_exam")
             )
 
-        # ---------------------------------------------
-        # Login successful
-        # ---------------------------------------------
-
-        session.clear()
-
-        session["participant_id"] = participant.id
-
-        return redirect(
-            url_for("start")
+        flash(
+            "Invalid Personal Number or password."
         )
 
     return render_template(
@@ -595,10 +499,6 @@ def logout():
 
     session.clear()
 
-    flash(
-        "You have been logged out."
-    )
-
     return redirect(
         url_for("login")
     )
@@ -609,7 +509,7 @@ def logout():
 # =========================================================
 
 @app.route("/start")
-def start():
+def start_exam():
 
     participant_id = session.get(
         "participant_id"
@@ -634,105 +534,157 @@ def start():
             url_for("login")
         )
 
-    # ---------------------------------------------
+    # -----------------------------------------------------
     # Check whether participant already submitted
-    # ---------------------------------------------
+    # -----------------------------------------------------
 
     submitted_attempt = Attempt.query.filter_by(
         participant_id=participant.id,
-        status="SUBMITTED"
+        status="submitted"
     ).first()
 
     if submitted_attempt:
 
-        return render_template(
-            "already_submitted.html",
-            participant=participant,
-            attempt=submitted_attempt
+        return redirect(
+            url_for(
+                "already_submitted"
+            )
         )
 
-    # ---------------------------------------------
-    # Resume existing attempt if present
-    # ---------------------------------------------
+    # -----------------------------------------------------
+    # Find an existing in-progress attempt
+    # -----------------------------------------------------
 
     attempt = Attempt.query.filter_by(
         participant_id=participant.id,
-        status="IN_PROGRESS"
+        status="in_progress"
     ).first()
-
-    if attempt:
-
-        question_ids = session.get(
-            "question_ids"
-        )
-
-        if not question_ids:
-
-            question_ids = [
-                answer.question_id
-                for answer in attempt.answer_records
-            ]
-
-            # If no answer records exist yet,
-            # create a fresh question order.
-            if not question_ids:
-
-                questions = Question.query.all()
-
-                question_ids = [
-                    q.id for q in questions
-                ]
-
-                random.shuffle(
-                    question_ids
-                )
-
-        session["attempt_id"] = attempt.id
-        session["question_ids"] = question_ids
-
-        return redirect(
-            url_for("quiz")
-        )
-
-    # ---------------------------------------------
-    # Create new attempt
-    # ---------------------------------------------
 
     questions = Question.query.all()
 
     if not questions:
 
         flash(
-            "No questions are available yet."
+            "No questions are available."
         )
 
         return redirect(
             url_for("login")
         )
 
-    question_ids = [
-        q.id for q in questions
-    ]
+    # =====================================================
+    # EXISTING ATTEMPT
+    # =====================================================
 
-    # Shuffle question order
-    random.shuffle(
-        question_ids
-    )
+    if attempt:
 
-    attempt = Attempt(
-        participant_id=participant.id,
-        started_at=datetime.utcnow(),
-        status="IN_PROGRESS",
-        score=0,
-        total_questions=len(question_ids),
-        answers={}
-    )
+        stored_answers = attempt.answers or {}
 
-    db.session.add(attempt)
+        # Get stored question order
+        question_ids = stored_answers.get(
+            "_question_ids"
+        )
 
-    db.session.commit()
+        if not question_ids:
 
+            question_ids = [
+                q.id for q in questions
+            ]
+
+            random.shuffle(
+                question_ids
+            )
+
+            stored_answers["_question_ids"] = (
+                question_ids
+            )
+
+            attempt.answers = stored_answers
+
+            db.session.commit()
+
+    # =====================================================
+    # NEW ATTEMPT
+    # =====================================================
+
+    else:
+
+        question_ids = [
+            q.id for q in questions
+        ]
+
+        # Random question order
+        random.shuffle(
+            question_ids
+        )
+
+        answers_data = {}
+
+        answers_data["_question_ids"] = (
+            question_ids
+        )
+
+        # -------------------------------------------------
+        # Create a RANDOM mapping for every question.
+        #
+        # Example:
+        #
+        # Display A -> original C
+        # Display B -> original A
+        # Display C -> original D
+        # Display D -> original B
+        #
+        # This mapping is saved permanently for this attempt.
+        # -------------------------------------------------
+
+        original_letters = [
+            "A",
+            "B",
+            "C",
+            "D"
+        ]
+
+        for question_id in question_ids:
+
+            shuffled_letters = (
+                original_letters.copy()
+            )
+
+            random.shuffle(
+                shuffled_letters
+            )
+
+            mapping = {
+                "A": shuffled_letters[0],
+                "B": shuffled_letters[1],
+                "C": shuffled_letters[2],
+                "D": shuffled_letters[3]
+            }
+
+            answers_data[
+                str(question_id)
+            ] = {
+                "mapping": mapping,
+                "selected": None,
+                "original": None
+            }
+
+        attempt = Attempt(
+            participant_id=participant.id,
+            status="in_progress",
+            total_questions=len(
+                question_ids
+            ),
+            answers=answers_data
+        )
+
+        db.session.add(attempt)
+
+        db.session.commit()
+
+    # Store attempt ID in session
     session["attempt_id"] = attempt.id
+
     session["question_ids"] = question_ids
 
     return redirect(
@@ -758,20 +710,16 @@ def quiz():
         "attempt_id"
     )
 
-    question_ids = session.get(
-        "question_ids"
-    )
-
     if not participant_id:
 
         return redirect(
             url_for("login")
         )
 
-    if not attempt_id or not question_ids:
+    if not attempt_id:
 
         return redirect(
-            url_for("start")
+            url_for("start_exam")
         )
 
     participant = db.session.get(
@@ -792,16 +740,28 @@ def quiz():
             url_for("login")
         )
 
-    # ---------------------------------------------
-    # Already submitted
-    # ---------------------------------------------
+    # -----------------------------------------------------
+    # Do not allow already submitted attempt
+    # -----------------------------------------------------
 
-    if attempt.status == "SUBMITTED":
+    if attempt.status == "submitted":
 
-        return render_template(
-            "already_submitted.html",
-            participant=participant,
-            attempt=attempt
+        return redirect(
+            url_for(
+                "already_submitted"
+            )
+        )
+
+    stored_answers = attempt.answers or {}
+
+    question_ids = stored_answers.get(
+        "_question_ids"
+    )
+
+    if not question_ids:
+
+        return redirect(
+            url_for("start_exam")
         )
 
     # =====================================================
@@ -810,46 +770,9 @@ def quiz():
 
     if request.method == "POST":
 
-        answers = {}
-
         score = 0
 
-        # ---------------------------------------------
-        # Read submitted answers
-        # ---------------------------------------------
-
-        for question_id in question_ids:
-
-            selected_answer = request.form.get(
-                f"question_{question_id}"
-            )
-
-            if selected_answer:
-
-                selected_answer = (
-                    selected_answer
-                    .strip()
-                    .upper()
-                )
-
-                if selected_answer not in [
-                    "A",
-                    "B",
-                    "C",
-                    "D"
-                ]:
-
-                    selected_answer = None
-
-            answers[str(question_id)] = (
-                selected_answer
-            )
-
-        # ---------------------------------------------
-        # Calculate score
-        # ---------------------------------------------
-
-        # Delete old answer records if any
+        # Remove any previous answer records
         Answer.query.filter_by(
             attempt_id=attempt.id
         ).delete()
@@ -858,30 +781,64 @@ def quiz():
 
             question = db.session.get(
                 Question,
-                question_id
+                int(question_id)
             )
 
             if not question:
                 continue
 
-            selected_answer = answers.get(
-                str(question_id)
+            question_data = stored_answers.get(
+                str(question_id),
+                {}
             )
 
+            mapping = question_data.get(
+                "mapping",
+                {}
+            )
+
+            # -------------------------------------------------
+            # This is the letter the participant ACTUALLY saw
+            # and clicked.
+            # -------------------------------------------------
+
+            selected_display = request.form.get(
+                f"question_{question_id}"
+            )
+
+            original_answer = None
+
+            if selected_display:
+
+                original_answer = mapping.get(
+                    selected_display
+                )
+
             is_correct = (
-                selected_answer is not None
-                and
-                selected_answer
+                original_answer
                 == question.correct_answer
             )
 
             if is_correct:
                 score += 1
 
+            # Save displayed answer and original answer
+            question_data["selected"] = (
+                selected_display
+            )
+
+            question_data["original"] = (
+                original_answer
+            )
+
+            stored_answers[
+                str(question_id)
+            ] = question_data
+
             answer_record = Answer(
                 attempt_id=attempt.id,
                 question_id=question.id,
-                selected_answer=selected_answer,
+                selected_answer=selected_display,
                 is_correct=is_correct
             )
 
@@ -889,11 +846,11 @@ def quiz():
                 answer_record
             )
 
-        # ---------------------------------------------
-        # Save final result
-        # ---------------------------------------------
+        # -----------------------------------------------------
+        # Mark attempt as submitted
+        # -----------------------------------------------------
 
-        attempt.answers = answers
+        attempt.answers = stored_answers
 
         attempt.score = score
 
@@ -901,50 +858,134 @@ def quiz():
             question_ids
         )
 
-        attempt.status = "SUBMITTED"
+        attempt.status = "submitted"
 
-        attempt.submitted_at = datetime.utcnow()
+        attempt.submitted_at = (
+            datetime.utcnow()
+        )
 
         db.session.commit()
-
-        # Clear exam session data
-        session.pop(
-            "attempt_id",
-            None
-        )
-
-        session.pop(
-            "question_ids",
-            None
-        )
 
         return redirect(
             url_for("submitted")
         )
 
     # =====================================================
-    # DISPLAY EXAM
+    # DISPLAY QUIZ
     # =====================================================
 
-    questions = []
+    question_data = []
 
     for question_id in question_ids:
 
         question = db.session.get(
             Question,
-            question_id
+            int(question_id)
         )
 
-        if question:
-            questions.append(
-                question
+        if not question:
+            continue
+
+        question_info = stored_answers.get(
+            str(question.id),
+            {}
+        )
+
+        mapping = question_info.get(
+            "mapping"
+        )
+
+        # -------------------------------------------------
+        # Safety fallback
+        # -------------------------------------------------
+
+        if not mapping:
+
+            original_letters = [
+                "A",
+                "B",
+                "C",
+                "D"
+            ]
+
+            shuffled_letters = (
+                original_letters.copy()
             )
+
+            random.shuffle(
+                shuffled_letters
+            )
+
+            mapping = {
+                "A": shuffled_letters[0],
+                "B": shuffled_letters[1],
+                "C": shuffled_letters[2],
+                "D": shuffled_letters[3]
+            }
+
+            question_info["mapping"] = (
+                mapping
+            )
+
+            stored_answers[
+                str(question.id)
+            ] = question_info
+
+        original_options = {
+
+            "A": question.option_a,
+
+            "B": question.option_b,
+
+            "C": question.option_c,
+
+            "D": question.option_d
+        }
+
+        display_options = []
+
+        for display_letter in [
+            "A",
+            "B",
+            "C",
+            "D"
+        ]:
+
+            original_letter = mapping.get(
+                display_letter
+            )
+
+            option_text = original_options.get(
+                original_letter,
+                ""
+            )
+
+            display_options.append({
+
+                "letter": display_letter,
+
+                "text": option_text
+            })
+
+        question_data.append({
+
+            "id": question.id,
+
+            "question": question.question_text,
+
+            "options": display_options
+
+        })
+
+    # Save any fallback mappings
+    attempt.answers = stored_answers
+
+    db.session.commit()
 
     return render_template(
         "quiz.html",
         participant=participant,
-        questions=questions,
-        attempt=attempt
+        questions=question_data
     )
 
 
@@ -972,15 +1013,15 @@ def submitted():
 
     attempt = Attempt.query.filter_by(
         participant_id=participant_id,
-        status="SUBMITTED"
+        status="submitted"
     ).order_by(
-        Attempt.submitted_at.desc()
+        Attempt.id.desc()
     ).first()
 
     if not attempt:
 
         return redirect(
-            url_for("start")
+            url_for("start_exam")
         )
 
     return render_template(
@@ -991,32 +1032,50 @@ def submitted():
 
 
 # =========================================================
+# ALREADY SUBMITTED
+# =========================================================
+
+@app.route("/already-submitted")
+def already_submitted():
+
+    participant_id = session.get(
+        "participant_id"
+    )
+
+    if not participant_id:
+
+        return redirect(
+            url_for("login")
+        )
+
+    participant = db.session.get(
+        Participant,
+        participant_id
+    )
+
+    attempt = Attempt.query.filter_by(
+        participant_id=participant_id,
+        status="submitted"
+    ).order_by(
+        Attempt.id.desc()
+    ).first()
+
+    return render_template(
+        "already_submitted.html",
+        participant=participant,
+        attempt=attempt
+    )
+
+
+# =========================================================
 # ADMIN LOGIN
 # =========================================================
 
-@app.route("/admin", methods=["GET", "POST"])
+@app.route(
+    "/admin",
+    methods=["GET", "POST"]
+)
 def admin_login():
-
-    if request.method == "POST":
-
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-
-        # Admin credentials
-        ADMIN_USERNAME = "admin"
-        ADMIN_PASSWORD = "admin123"
-
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-
-            session["admin_logged_in"] = True
-
-            return redirect(
-                url_for("admin_dashboard")
-            )
-
-        flash("Invalid admin username or password.")
-
-    return render_template("admin_login.html")
 
     if request.method == "POST":
 
@@ -1030,26 +1089,25 @@ def admin_login():
             ""
         )
 
-        admin_username = os.environ.get(
-            "ADMIN_USERNAME",
-            "admin"
-        )
+        # -------------------------------------------------
+        # Current admin credentials
+        # -------------------------------------------------
 
-        admin_password = os.environ.get(
-            "ADMIN_PASSWORD",
-            "admin123"
-        )
+        ADMIN_USERNAME = "admin"
+
+        ADMIN_PASSWORD = "admin123"
 
         if (
-            username == admin_username
-            and
-            password == admin_password
+            username == ADMIN_USERNAME
+            and password == ADMIN_PASSWORD
         ):
 
             session["admin_logged_in"] = True
 
             return redirect(
-                url_for("admin_dashboard")
+                url_for(
+                    "admin_dashboard"
+                )
             )
 
         flash(
@@ -1094,118 +1152,140 @@ def admin_dashboard():
         )
 
     participants = Participant.query.order_by(
-        Participant.name.asc()
+        Participant.id.asc()
     ).all()
 
     participant_data = []
 
     completed_count = 0
+
     in_progress_count = 0
+
     not_attempted_count = 0
 
     for participant in participants:
 
-        # Get most recent attempt
         attempt = Attempt.query.filter_by(
             participant_id=participant.id
         ).order_by(
-            Attempt.started_at.desc()
+            Attempt.id.desc()
         ).first()
 
         if not attempt:
 
-            status = "NOT ATTEMPTED"
+            status = "Not Attempted"
 
-            score = None
-
-            total_questions = None
+            score_display = "-"
 
             not_attempted_count += 1
 
-        elif attempt.status == "SUBMITTED":
+        elif attempt.status == "submitted":
 
-            status = "COMPLETED"
+            status = "Completed"
 
-            score = attempt.score
-
-            total_questions = (
-                attempt.total_questions
+            score_display = (
+                f"{attempt.score}/"
+                f"{attempt.total_questions}"
             )
 
             completed_count += 1
 
         else:
 
-            status = "IN PROGRESS"
+            status = "In Progress"
 
-            score = None
-
-            total_questions = (
-                attempt.total_questions
-            )
+            score_display = "-"
 
             in_progress_count += 1
 
         participant_data.append({
+
             "participant": participant,
+
             "attempt": attempt,
+
             "status": status,
-            "score": score,
-            "total_questions": total_questions
+
+            "score": score_display
+
         })
 
-    # ---------------------------------------------
+    # -----------------------------------------------------
     # Ranking
-    # ---------------------------------------------
+    # -----------------------------------------------------
 
-    completed_participants = [
-        item
-        for item in participant_data
-        if item["status"] == "COMPLETED"
-    ]
+    completed_attempts = []
 
-    completed_participants.sort(
-        key=lambda x: x["score"],
-        reverse=True
+    for participant in participants:
+
+        attempt = Attempt.query.filter_by(
+            participant_id=participant.id,
+            status="submitted"
+        ).order_by(
+            Attempt.score.desc(),
+            Attempt.submitted_at.asc()
+        ).first()
+
+        if attempt:
+
+            completed_attempts.append({
+
+                "participant": participant,
+
+                "attempt": attempt
+
+            })
+
+    completed_attempts.sort(
+        key=lambda x: (
+            -x["attempt"].score,
+            x["attempt"].submitted_at
+            or datetime.max
+        )
     )
 
-    ranking = {}
-
-    current_rank = 0
-    previous_score = None
+    ranking = []
 
     for index, item in enumerate(
-        completed_participants,
+        completed_attempts,
         start=1
     ):
 
-        if item["score"] != previous_score:
+        ranking.append({
 
-            current_rank = index
+            "rank": index,
 
-        ranking[
-            item["participant"].id
-        ] = current_rank
+            "participant": item["participant"],
 
-        previous_score = item["score"]
+            "attempt": item["attempt"]
+
+        })
 
     total_registered = len(
         participants
     )
 
     return render_template(
+
         "admin_dashboard.html",
+
         participant_data=participant_data,
+
         total_registered=total_registered,
+
         completed_count=completed_count,
+
         in_progress_count=in_progress_count,
+
         not_attempted_count=not_attempted_count,
+
         ranking=ranking
+
     )
 
 
 # =========================================================
-# ADMIN INDIVIDUAL RESULT
+# ADMIN RESULT
 # =========================================================
 
 @app.route(
@@ -1237,81 +1317,186 @@ def admin_result(participant_id):
         )
 
     attempt = Attempt.query.filter_by(
-        participant_id=participant.id
+        participant_id=participant.id,
+        status="submitted"
     ).order_by(
-        Attempt.started_at.desc()
+        Attempt.id.desc()
     ).first()
+
+    if not attempt:
+
+        flash(
+            "This participant has not submitted the exam."
+        )
+
+        return redirect(
+            url_for("admin_dashboard")
+        )
+
+    stored_answers = attempt.answers or {}
 
     answer_details = []
 
-    if attempt:
+    # -----------------------------------------------------
+    # Use the original stored question order
+    # -----------------------------------------------------
 
-        answer_records = Answer.query.filter_by(
-            attempt_id=attempt.id
-        ).all()
+    question_ids = stored_answers.get(
+        "_question_ids",
+        []
+    )
 
-        for answer in answer_records:
+    for question_id in question_ids:
 
-            question = db.session.get(
-                Question,
-                answer.question_id
+        question = db.session.get(
+            Question,
+            int(question_id)
+        )
+
+        if not question:
+            continue
+
+        answer = Answer.query.filter_by(
+            attempt_id=attempt.id,
+            question_id=question.id
+        ).first()
+
+        if not answer:
+            continue
+
+        question_data = stored_answers.get(
+            str(question.id),
+            {}
+        )
+
+        mapping = question_data.get(
+            "mapping",
+            {}
+        )
+
+        # -------------------------------------------------
+        # Participant's displayed selection
+        # -------------------------------------------------
+
+        selected_display = (
+            answer.selected_answer
+        )
+
+        selected_text = ""
+
+        if selected_display:
+
+            original_selected = mapping.get(
+                selected_display
             )
 
-            if not question:
-                continue
+            if original_selected == "A":
 
-            selected_text = ""
+                selected_text = (
+                    question.option_a
+                )
 
-            if answer.selected_answer == "A":
-                selected_text = question.option_a
+            elif original_selected == "B":
 
-            elif answer.selected_answer == "B":
-                selected_text = question.option_b
+                selected_text = (
+                    question.option_b
+                )
 
-            elif answer.selected_answer == "C":
-                selected_text = question.option_c
+            elif original_selected == "C":
 
-            elif answer.selected_answer == "D":
-                selected_text = question.option_d
+                selected_text = (
+                    question.option_c
+                )
 
-            correct_text = ""
+            elif original_selected == "D":
 
-            if question.correct_answer == "A":
-                correct_text = question.option_a
+                selected_text = (
+                    question.option_d
+                )
 
-            elif question.correct_answer == "B":
-                correct_text = question.option_b
+        # -------------------------------------------------
+        # Correct answer in DISPLAYED position
+        # -------------------------------------------------
 
-            elif question.correct_answer == "C":
-                correct_text = question.option_c
+        correct_display = ""
 
-            elif question.correct_answer == "D":
-                correct_text = question.option_d
+        for display_letter, original_letter in mapping.items():
 
-            answer_details.append({
-                "question": question,
-                "selected_answer": answer.selected_answer,
-                "selected_text": selected_text,
-                "correct_answer": question.correct_answer,
-                "correct_text": correct_text,
-                "is_correct": answer.is_correct
-            })
+            if (
+                original_letter
+                == question.correct_answer
+            ):
+
+                correct_display = (
+                    display_letter
+                )
+
+                break
+
+        # -------------------------------------------------
+        # Correct answer text
+        # -------------------------------------------------
+
+        if question.correct_answer == "A":
+
+            correct_text = (
+                question.option_a
+            )
+
+        elif question.correct_answer == "B":
+
+            correct_text = (
+                question.option_b
+            )
+
+        elif question.correct_answer == "C":
+
+            correct_text = (
+                question.option_c
+            )
+
+        else:
+
+            correct_text = (
+                question.option_d
+            )
+
+        answer_details.append({
+
+            "question": question,
+
+            "selected_answer": selected_display,
+
+            "selected_text": selected_text,
+
+            "correct_answer": correct_display,
+
+            "correct_text": correct_text,
+
+            "is_correct": answer.is_correct
+
+        })
 
     return render_template(
+
         "admin_result.html",
+
         participant=participant,
+
         attempt=attempt,
+
         answer_details=answer_details
+
     )
 
 
 # =========================================================
-# ADMIN RESET ATTEMPT
+# ADMIN RESET PARTICIPANT
 # =========================================================
 
 @app.route(
     "/admin/reset/<int:participant_id>",
-    methods=["POST"]
+    methods=["POST", "GET"]
 )
 def admin_reset(participant_id):
 
@@ -1338,20 +1523,20 @@ def admin_reset(participant_id):
             url_for("admin_dashboard")
         )
 
-    attempts = Attempt.query.filter_by(
+    # Delete all attempts.
+    # This also deletes answer records because
+    # of the cascade relationship.
+
+    Attempt.query.filter_by(
         participant_id=participant.id
-    ).all()
-
-    for attempt in attempts:
-
-        db.session.delete(
-            attempt
-        )
+    ).delete(
+        synchronize_session=False
+    )
 
     db.session.commit()
 
     flash(
-        "Exam attempt has been reset."
+        f"Exam attempt reset for {participant.name}."
     )
 
     return redirect(
@@ -1360,18 +1545,11 @@ def admin_reset(participant_id):
 
 
 # =========================================================
-# HEALTH CHECK
+# RUN APPLICATION
 # =========================================================
 
-@app.route("/health")
-def health():
+initialize_database()
 
-    return "OK"
-
-
-# =========================================================
-# RUN APP
-# =========================================================
 
 if __name__ == "__main__":
 
@@ -1383,5 +1561,5 @@ if __name__ == "__main__":
                 5000
             )
         ),
-        debug=False
+        debug=True
     )
