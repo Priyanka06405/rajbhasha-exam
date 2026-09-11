@@ -2,216 +2,203 @@
 
 {% block content %}
 
-<style>
+<div class="container">
 
-    .quiz-header {
-        background: #222;
-        color: white;
-        padding: 20px 30px;
-        margin: -30px -30px 30px -30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
+    <div class="exam-header">
+        <div>
+            <h2>Rajbhasha Exam</h2>
+            <p>Participant: <strong>{{ participant.name }}</strong></p>
+        </div>
 
-    .quiz-header h1 {
-        margin: 0;
-        font-size: 28px;
-    }
-
-    .participant-name {
-        font-size: 16px;
-    }
-
-    .question-card {
-        background: white;
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
-
-    .question-number {
-        color: #64748b;
-        font-size: 17px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-
-    .question-text {
-        font-size: 22px;
-        font-weight: bold;
-        line-height: 1.5;
-        margin-bottom: 22px;
-        color: #111827;
-    }
-
-    .option {
-        display: block;
-        border: 2px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 15px 18px;
-        margin-bottom: 12px;
-        cursor: pointer;
-        font-size: 18px;
-        transition: 0.2s;
-    }
-
-    .option:hover {
-        background: #f8fafc;
-        border-color: #94a3b8;
-    }
-
-    .option input {
-        margin-right: 12px;
-        transform: scale(1.2);
-    }
-
-    .option-letter {
-        font-weight: bold;
-        margin-right: 8px;
-    }
-
-    .submit-section {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        text-align: center;
-        margin-top: 30px;
-    }
-
-    .submit-btn {
-        background: #222;
-        color: white;
-        border: none;
-        padding: 15px 45px;
-        border-radius: 10px;
-        font-size: 18px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    .submit-btn:hover {
-        background: #444;
-    }
-
-    .progress-text {
-        color: #64748b;
-        margin-bottom: 20px;
-        font-size: 16px;
-    }
-
-</style>
-
-
-<!-- HEADER -->
-
-<div class="quiz-header">
-
-    <h1>
-        Rajbhasha Exam
-    </h1>
-
-    <div class="participant-name">
-
-        {{ participant.name }}
-
-        &nbsp; | &nbsp;
-
-        <a
-            href="{{ url_for('logout') }}"
-            style="color:white;"
-        >
-            Logout
-        </a>
-
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </div>
 
-</div>
+    <form method="POST" onsubmit="return confirmSubmit();">
 
-
-<!-- PROGRESS -->
-
-<div class="progress-text">
-
-    Total Questions:
-    <strong>{{ questions|length }}</strong>
-
-</div>
-
-
-<form
-    method="POST"
-    onsubmit="return confirmSubmit();"
->
-
-
-    <!-- QUESTIONS -->
-
-    {% for item in questions %}
+        {% for q in questions %}
 
         <div class="question-card">
 
             <div class="question-number">
-
                 Question {{ loop.index }}
-
             </div>
-
 
             <div class="question-text">
-
-                {{ item.question.question_text }}
-
+                {{ q.question }}
             </div>
 
+            <div class="options">
 
-            <!-- OPTIONS -->
-
-            {% for option in item.options %}
+                {% for option in q.options %}
 
                 <label class="option">
-
                     <input
                         type="radio"
-                        name="question_{{ item.question.id }}"
+                        name="question_{{ q.id }}"
                         value="{{ option.letter }}"
+                        required
                     >
 
                     <span class="option-letter">
-                        {{ option.letter }}.
+                        {{ option.letter }}
                     </span>
 
-                    {{ option.text }}
-
+                    <span class="option-text">
+                        {{ option.text }}
+                    </span>
                 </label>
 
-            {% endfor %}
+                {% endfor %}
+
+            </div>
 
         </div>
 
-    {% endfor %}
+        {% endfor %}
+
+        <div class="submit-section">
+            <button type="submit" class="submit-btn">
+                Submit Exam
+            </button>
+        </div>
+
+    </form>
+
+</div>
 
 
-    <!-- SUBMIT -->
+<style>
 
-    <div class="submit-section">
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+}
 
-        <p>
-            Please review your answers before submitting.
-        </p>
+.exam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
 
-        <button
-            type="submit"
-            class="submit-btn"
-        >
-            Submit Examination
-        </button>
+.exam-header h2 {
+    margin: 0 0 5px 0;
+}
 
-    </div>
+.exam-header p {
+    margin: 0;
+    color: #555;
+}
 
-</form>
+.logout-btn {
+    text-decoration: none;
+    background: #dc3545;
+    color: white;
+    padding: 9px 16px;
+    border-radius: 6px;
+}
+
+.question-card {
+    background: white;
+    margin-bottom: 20px;
+    padding: 22px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.question-number {
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.question-text {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    line-height: 1.6;
+}
+
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.option:hover {
+    background: #f5f5f5;
+}
+
+.option input {
+    margin: 0;
+}
+
+.option-letter {
+    font-weight: bold;
+    min-width: 25px;
+}
+
+.option-text {
+    line-height: 1.5;
+}
+
+.submit-section {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.submit-btn {
+    background: #198754;
+    color: white;
+    border: none;
+    padding: 13px 35px;
+    font-size: 17px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.submit-btn:hover {
+    background: #157347;
+}
+
+@media (max-width: 600px) {
+
+    .container {
+        padding: 10px;
+        margin: 10px auto;
+    }
+
+    .exam-header {
+        padding: 15px;
+    }
+
+    .question-card {
+        padding: 16px;
+    }
+
+    .question-text {
+        font-size: 16px;
+    }
+
+}
+
+</style>
 
 
 <script>
@@ -219,12 +206,12 @@
 function confirmSubmit() {
 
     return confirm(
-        "Are you sure you want to submit the examination? You cannot change your answers after submission."
+        "Are you sure you want to submit the exam?\n\n" +
+        "You will not be able to change your answers after submission."
     );
 
 }
 
 </script>
-
 
 {% endblock %}
