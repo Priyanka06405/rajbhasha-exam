@@ -116,10 +116,12 @@
 </div>
 
 
-<form method="POST"
-      action="{{ url_for('quiz') }}"
-      onsubmit="return confirm('क्या आप परीक्षा जमा करना चाहते हैं? जमा करने के बाद आप उत्तर बदल नहीं पाएंगे।');">
-
+<textarea
+    form="examForm"
+    name="one_liner_{{ q.id }}"
+    placeholder="अपना उत्तर यहाँ लिखें..."
+    required
+></textarea>
 
     <!-- =================================================
          SECTION A
