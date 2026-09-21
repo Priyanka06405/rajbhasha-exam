@@ -2,216 +2,238 @@
 
 {% block content %}
 
-<div class="container">
+<style>
+    .exam-header {
+        background: #f8f9fa;
+        padding: 18px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+    }
 
-    <div class="exam-header">
-        <div>
-            <h2>Rajbhasha Exam</h2>
-            <p>Participant: <strong>{{ participant.name }}</strong></p>
-        </div>
+    .section-title {
+        background: #343a40;
+        color: white;
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin: 25px 0 18px;
+    }
 
-        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-    </div>
+    .question-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 18px;
+    }
 
-    <form method="POST" onsubmit="return confirmSubmit();">
+    .question-number {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
 
-        {% for q in questions %}
+    .option {
+        display: block;
+        padding: 10px 12px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 7px;
+        cursor: pointer;
+    }
 
-        <div class="question-card">
+    .option:hover {
+        background: #f5f5f5;
+    }
 
-            <div class="question-number">
-                Question {{ loop.index }}
-            </div>
+    .option input {
+        margin-right: 8px;
+    }
 
-            <div class="question-text">
-                {{ q.question }}
-            </div>
+    .one-liner-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 18px;
+    }
 
-            <div class="options">
+    textarea {
+        width: 100%;
+        min-height: 90px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+        resize: vertical;
+        font-size: 16px;
+    }
 
-                {% for option in q.options %}
+    .submit-area {
+        text-align: center;
+        padding: 25px 0 40px;
+    }
 
-                <label class="option">
-                    <input
-                        type="radio"
-                        name="question_{{ q.id }}"
-                        value="{{ option.letter }}"
-                        required
-                    >
+    .submit-btn {
+        background: #198754;
+        color: white;
+        border: none;
+        padding: 13px 30px;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+    }
 
-                    <span class="option-letter">
-                        {{ option.letter }}
-                    </span>
+    .submit-btn:hover {
+        background: #157347;
+    }
 
-                    <span class="option-text">
-                        {{ option.text }}
-                    </span>
-                </label>
+    .marks {
+        color: #666;
+        font-size: 14px;
+        font-weight: normal;
+    }
+</style>
 
-                {% endfor %}
 
-            </div>
+<div class="exam-header">
 
-        </div>
+    <h2>राजभाषा परीक्षा</h2>
 
-        {% endfor %}
+    <p>
+        <strong>Participant:</strong>
+        {{ participant.name }}
+    </p>
 
-        <div class="submit-section">
-            <button type="submit" class="submit-btn">
-                Submit Exam
-            </button>
-        </div>
+    <p>
+        <strong>Personal Number:</strong>
+        {{ participant.registration_id }}
+    </p>
 
-    </form>
+    <p>
+        <strong>Total Marks:</strong>
+        70
+    </p>
 
 </div>
 
 
-<style>
-
-.container {
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 20px;
-}
-
-.exam-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    padding: 20px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.exam-header h2 {
-    margin: 0 0 5px 0;
-}
-
-.exam-header p {
-    margin: 0;
-    color: #555;
-}
-
-.logout-btn {
-    text-decoration: none;
-    background: #dc3545;
-    color: white;
-    padding: 9px 16px;
-    border-radius: 6px;
-}
-
-.question-card {
-    background: white;
-    margin-bottom: 20px;
-    padding: 22px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.question-number {
-    font-weight: bold;
-    color: #555;
-    margin-bottom: 10px;
-}
-
-.question-text {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 18px;
-    line-height: 1.6;
-}
-
-.options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 13px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.option:hover {
-    background: #f5f5f5;
-}
-
-.option input {
-    margin: 0;
-}
-
-.option-letter {
-    font-weight: bold;
-    min-width: 25px;
-}
-
-.option-text {
-    line-height: 1.5;
-}
-
-.submit-section {
-    text-align: center;
-    margin: 30px 0;
-}
-
-.submit-btn {
-    background: #198754;
-    color: white;
-    border: none;
-    padding: 13px 35px;
-    font-size: 17px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.submit-btn:hover {
-    background: #157347;
-}
-
-@media (max-width: 600px) {
-
-    .container {
-        padding: 10px;
-        margin: 10px auto;
-    }
-
-    .exam-header {
-        padding: 15px;
-    }
-
-    .question-card {
-        padding: 16px;
-    }
-
-    .question-text {
-        font-size: 16px;
-    }
-
-}
-
-</style>
+<form method="POST"
+      action="{{ url_for('quiz') }}"
+      onsubmit="return confirm('क्या आप परीक्षा जमा करना चाहते हैं? जमा करने के बाद आप उत्तर बदल नहीं पाएंगे।');">
 
 
-<script>
+    <!-- =================================================
+         SECTION A
+         ================================================= -->
 
-function confirmSubmit() {
+    <div class="section-title">
 
-    return confirm(
-        "Are you sure you want to submit the exam?\n\n" +
-        "You will not be able to change your answers after submission."
-    );
+        <h3 style="margin:0;">
+            Section A – बहुविकल्पीय प्रश्न
+        </h3>
 
-}
+        <div style="margin-top:5px;">
+            60 Questions × 1 Mark = 60 Marks
+        </div>
 
-</script>
+    </div>
+
+
+    {% for q in questions %}
+
+    <div class="question-card">
+
+        <div class="question-number">
+
+            Q{{ loop.index }}.
+            {{ q.question }}
+
+            <span class="marks">
+                (1 Mark)
+            </span>
+
+        </div>
+
+
+        {% for option in q.options %}
+
+        <label class="option">
+
+            <input
+                type="radio"
+                name="question_{{ q.id }}"
+                value="{{ option.letter }}"
+            >
+
+            <strong>{{ option.letter }}.</strong>
+            {{ option.text }}
+
+        </label>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    <!-- =================================================
+         SECTION B
+         ================================================= -->
+
+    <div class="section-title">
+
+        <h3 style="margin:0;">
+            Section B – One-Liner Questions
+        </h3>
+
+        <div style="margin-top:5px;">
+            5 Questions × 2 Marks = 10 Marks
+        </div>
+
+    </div>
+
+
+    {% for q in one_liners %}
+
+    <div class="one-liner-card">
+
+        <div class="question-number">
+
+            Q{{ loop.index }}.
+            {{ q.question }}
+
+            <span class="marks">
+                ({{ q.marks }} Marks)
+            </span>
+
+        </div>
+
+
+        <textarea
+            name="one_liner_{{ q.id }}"
+            placeholder="अपना उत्तर यहाँ लिखें..."
+        ></textarea>
+
+    </div>
+
+    {% endfor %}
+
+
+    <!-- =================================================
+         SUBMIT
+         ================================================= -->
+
+    <div class="submit-area">
+
+        <button
+            type="submit"
+            class="submit-btn"
+        >
+            परीक्षा जमा करें
+        </button>
+
+    </div>
+
+</form>
 
 {% endblock %}
