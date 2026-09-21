@@ -1942,13 +1942,7 @@ if __name__ == "__main__":
         debug=True
     )
 
-    render_template,
-    request,
-    redirect,
-    url_for,
-    session,
-    flash
-)
+   
 
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
