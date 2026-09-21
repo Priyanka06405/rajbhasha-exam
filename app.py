@@ -1,16 +1,6 @@
 import os
 import csv
 import random
-import re
-import unicodedata
-from datetime import datetime
-
-from flask import (
-    Flask,import os
-import csv
-import random
-import re
-import unicodedata
 from datetime import datetime
 
 from flask import (
@@ -20,11 +10,14 @@ from flask import (
     redirect,
     url_for,
     session,
-    flash
+    flash,
 )
 
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
 
 # =========================================================
@@ -35,21 +28,22 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get(
     "SECRET_KEY",
-    "rajbhasha-secret-key-change-later"
+    "rajbhasha-secret-key-change-this"
 )
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+database_url = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///exam.db"
+)
 
-if DATABASE_URL:
-    # Render/PostgreSQL sometimes gives postgres://
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgres://",
-            "postgresql://",
-            1
-        )
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace(
+        "postgres://",
+        "postgresql://",
+        1
+    )
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///exam.db"
