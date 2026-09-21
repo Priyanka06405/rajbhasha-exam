@@ -879,22 +879,20 @@ def quiz():
             url_for("login")
         )
 
-    # -----------------------------------------------------
-    # Do not allow already submitted attempt
-    # -----------------------------------------------------
-
     if attempt.status == "submitted":
 
         return redirect(
-            url_for(
-                "already_submitted"
-            )
+            url_for("already_submitted")
         )
 
-    stored_answers = attempt.answers or {}
+    stored_answers = (
+        attempt.answers or {}
+    )
 
-    question_ids = stored_answers.get(
-        "_question_ids"
+    question_ids = (
+        stored_answers.get(
+            "_question_ids"
+        )
     )
 
     if not question_ids:
@@ -911,10 +909,17 @@ def quiz():
 
         score = 0
 
-        # Remove any previous answer records
+        # -------------------------------------------------
+        # Remove previous MCQ answer records
+        # -------------------------------------------------
+
         Answer.query.filter_by(
             attempt_id=attempt.id
         ).delete()
+
+        # -------------------------------------------------
+        # CHECK MCQs
+        # -------------------------------------------------
 
         for question_id in question_ids:
 
@@ -926,20 +931,19 @@ def quiz():
             if not question:
                 continue
 
-            question_data = stored_answers.get(
-                str(question_id),
-                {}
+            question_data = (
+                stored_answers.get(
+                    str(question_id),
+                    {}
+                )
             )
 
-            mapping = question_data.get(
-                "mapping",
-                {}
+            mapping = (
+                question_data.get(
+                    "mapping",
+                    {}
+                )
             )
-
-            # -------------------------------------------------
-            # This is the letter the participant ACTUALLY saw
-            # and clicked.
-            # -------------------------------------------------
 
             selected_display = request.form.get(
                 f"question_{question_id}"
@@ -959,16 +963,16 @@ def quiz():
             )
 
             if is_correct:
+
                 score += 1
 
-            # Save displayed answer and original answer
-            question_data["selected"] = (
-                selected_display
-            )
+            question_data[
+                "selected"
+            ] = selected_display
 
-            question_data["original"] = (
-                original_answer
-            )
+            question_data[
+                "original"
+            ] = original_answer
 
             stored_answers[
                 str(question_id)
@@ -985,50 +989,65 @@ def quiz():
                 answer_record
             )
 
-       # -------------------------------------------------
-# SAVE ONE-LINER ANSWERS
-# -------------------------------------------------
+        # =================================================
+        # SAVE ONE-LINER ANSWERS
+        # =================================================
 
-one_liner_answers = (
-    stored_answers.get(
-        "_one_liners",
-        {}
-    )
-)
+        one_liner_answers = (
+            stored_answers.get(
+                "_one_liners",
+                {}
+            )
+        )
 
-for one_liner in get_one_liners():
+        for one_liner in get_one_liners():
 
-    one_liner_id = str(
-        one_liner["id"]
-    )
+            one_liner_id = str(
+                one_liner["id"]
+            )
 
-    field_name = f"one_liner_{one_liner_id}"
+            field_name = (
+                f"one_liner_{one_liner_id}"
+            )
 
-    # Get exactly what the participant typed
-    written_answer = request.form.get(
-        field_name
-    )
+            # Get exactly what participant typed
+            written_answer = request.form.get(
+                field_name
+            )
 
-    if written_answer is None:
-        written_answer = ""
+            if written_answer is None:
 
-    written_answer = written_answer.strip()
+                written_answer = ""
 
-    # Save the participant's answer.
-    # Do NOT automatically award marks here.
-    # The administrator will grade it.
-    one_liner_answers[one_liner_id] = {
-        "answer": written_answer,
-        "marks": 0
-    }
+            written_answer = (
+                written_answer.strip()
+            )
 
-stored_answers["_one_liners"] = one_liner_answers
+            # Save answer.
+            # Admin will award 0, 1 or 2 marks.
+            one_liner_answers[
+                one_liner_id
+            ] = {
 
-        # -----------------------------------------------------
-        # Mark attempt as submitted
-        # -----------------------------------------------------
+                "answer":
+                    written_answer,
 
-        attempt.answers = stored_answers
+                "marks":
+                    0
+
+            }
+
+        stored_answers[
+            "_one_liners"
+        ] = one_liner_answers
+
+        # =================================================
+        # SAVE FINAL ATTEMPT
+        # =================================================
+
+        attempt.answers = (
+            stored_answers
+        )
 
         attempt.score = score
 
@@ -1064,9 +1083,11 @@ stored_answers["_one_liners"] = one_liner_answers
         if not question:
             continue
 
-        question_info = stored_answers.get(
-            str(question.id),
-            {}
+        question_info = (
+            stored_answers.get(
+                str(question.id),
+                {}
+            )
         )
 
         mapping = question_info.get(
@@ -1095,15 +1116,20 @@ stored_answers["_one_liners"] = one_liner_answers
             )
 
             mapping = {
+
                 "A": shuffled_letters[0],
+
                 "B": shuffled_letters[1],
+
                 "C": shuffled_letters[2],
+
                 "D": shuffled_letters[3]
+
             }
 
-            question_info["mapping"] = (
-                mapping
-            )
+            question_info[
+                "mapping"
+            ] = mapping
 
             stored_answers[
                 str(question.id)
@@ -1111,13 +1137,18 @@ stored_answers["_one_liners"] = one_liner_answers
 
         original_options = {
 
-            "A": question.option_a,
+            "A":
+                question.option_a,
 
-            "B": question.option_b,
+            "B":
+                question.option_b,
 
-            "C": question.option_c,
+            "C":
+                question.option_c,
 
-            "D": question.option_d
+            "D":
+                question.option_d
+
         }
 
         display_options = []
@@ -1133,125 +1164,62 @@ stored_answers["_one_liners"] = one_liner_answers
                 display_letter
             )
 
-            option_text = original_options.get(
-                original_letter,
-                ""
+            option_text = (
+                original_options.get(
+                    original_letter,
+                    ""
+                )
             )
 
             display_options.append({
 
-                "letter": display_letter,
+                "letter":
+                    display_letter,
 
-                "text": option_text
+                "text":
+                    option_text
+
             })
 
         question_data.append({
 
-            "id": question.id,
+            "id":
+                question.id,
 
-            "question": question.question_text,
+            "question":
+                question.question_text,
 
-            "options": display_options
+            "options":
+                display_options
 
         })
 
-    # Save any fallback mappings
+    # =====================================================
+    # SAVE ANY UPDATED QUESTION MAPPINGS
+    # =====================================================
+
     attempt.answers = stored_answers
 
     db.session.commit()
 
+    # =====================================================
+    # SHOW EXAM
+    # =====================================================
+
     return render_template(
+
         "quiz.html",
-        participant=participant,
-        questions=question_data,
-        one_liners=get_one_liners()
+
+        participant=
+            participant,
+
+        questions=
+            question_data,
+
+        one_liners=
+            get_one_liners()
+
     )
-
-
-# =========================================================
-# SUBMITTED PAGE
-# =========================================================
-
-@app.route("/submitted")
-def submitted():
-
-    participant_id = session.get(
-        "participant_id"
-    )
-
-    if not participant_id:
-
-        return redirect(
-            url_for("login")
-        )
-
-    participant = db.session.get(
-        Participant,
-        participant_id
-    )
-
-    attempt = Attempt.query.filter_by(
-        participant_id=participant_id,
-        status="submitted"
-    ).order_by(
-        Attempt.id.desc()
-    ).first()
-
-    if not attempt:
-
-        return redirect(
-            url_for("start_exam")
-        )
-
-    return render_template(
-        "submitted.html",
-        participant=participant,
-        attempt=attempt,
-        written_score=get_written_score(attempt),
-        total_score=get_total_score(attempt),
-        total_marks=get_total_marks(attempt)
-    )
-
-
-# =========================================================
-# ALREADY SUBMITTED
-# =========================================================
-
-@app.route("/already-submitted")
-def already_submitted():
-
-    participant_id = session.get(
-        "participant_id"
-    )
-
-    if not participant_id:
-
-        return redirect(
-            url_for("login")
-        )
-
-    participant = db.session.get(
-        Participant,
-        participant_id
-    )
-
-    attempt = Attempt.query.filter_by(
-        participant_id=participant_id,
-        status="submitted"
-    ).order_by(
-        Attempt.id.desc()
-    ).first()
-
-    return render_template(
-        "already_submitted.html",
-        participant=participant,
-        attempt=attempt,
-        written_score=get_written_score(attempt),
-        total_score=get_total_score(attempt),
-        total_marks=get_total_marks(attempt)
-    )
-
-
 # =========================================================
 # ADMIN LOGIN
 # =========================================================
