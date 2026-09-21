@@ -985,36 +985,44 @@ def quiz():
                 answer_record
             )
 
-        # -----------------------------------------------------
-        # SAVE ONE-LINER ANSWERS
-        # -----------------------------------------------------
+       # -------------------------------------------------
+# SAVE ONE-LINER ANSWERS
+# -------------------------------------------------
 
-        one_liner_answers = stored_answers.get(
-            "_one_liners",
-            {}
-        )
+one_liner_answers = (
+    stored_answers.get(
+        "_one_liners",
+        {}
+    )
+)
 
-        for one_liner in get_one_liners():
+for one_liner in get_one_liners():
 
-            one_liner_id = str(one_liner["id"])
+    one_liner_id = str(
+        one_liner["id"]
+    )
 
-            written_answer = request.form.get(
-                f"one_liner_{one_liner_id}",
-                ""
-            ).strip()
+    field_name = f"one_liner_{one_liner_id}"
 
-            automatic_marks = automatically_check_one_liner(
-                written_answer,
-                one_liner["correct_answer"]
-            )
+    # Get exactly what the participant typed
+    written_answer = request.form.get(
+        field_name
+    )
 
-            one_liner_answers[one_liner_id] = {
-                "answer": written_answer,
-                "marks": automatic_marks,
-                "automatic_marks": automatic_marks
-            }
+    if written_answer is None:
+        written_answer = ""
 
-        stored_answers["_one_liners"] = one_liner_answers
+    written_answer = written_answer.strip()
+
+    # Save the participant's answer.
+    # Do NOT automatically award marks here.
+    # The administrator will grade it.
+    one_liner_answers[one_liner_id] = {
+        "answer": written_answer,
+        "marks": 0
+    }
+
+stored_answers["_one_liners"] = one_liner_answers
 
         # -----------------------------------------------------
         # Mark attempt as submitted
