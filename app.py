@@ -1,6 +1,8 @@
 import os
 import csv
 import random
+import re
+import unicodedata
 from datetime import datetime
 
 from flask import (
@@ -48,6 +50,122 @@ else:
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+
+
+# =========================================================
+# EXAM CONFIGURATION
+# =========================================================
+
+MCQ_MARKS_PER_QUESTION = 1
+ONE_LINER_MARKS = 2
+TOTAL_ONE_LINER_MARKS = 10
+
+
+# =========================================================
+# ONE-LINER QUESTIONS + ANSWER KEY
+# =========================================================
+
+ONE_LINER_QUESTIONS = [
+    {
+        "id": 1,
+        "question": "वार्षिक राजभाषा पत्रिका ‘तरंग’ की मुख्य संपादक कौन हैं?",
+        "marks": 2,
+        "correct_answer": "Shri Alok Kumar Choudhary"
+    },
+    {
+        "id": 2,
+        "question": "राष्ट्रीय गीत ‘वन्दे मातरम्’ के रचयिता का नाम बताइए।",
+        "marks": 2,
+        "correct_answer": "Bankim Chandra Chatterjee"
+    },
+    {
+        "id": 3,
+        "question": "‘तरंग’ पत्रिका में ‘दमदम की गवाही’ के रचयिता का नाम बताइए।",
+        "marks": 2,
+        "correct_answer": "Amartya Talukdar"
+    },
+    {
+        "id": 4,
+        "question": "28वें नेशनल डिफेंस एग्जिबिशन का आयोजन किस वर्ष हुआ था?",
+        "marks": 2,
+        "correct_answer": "2025"
+    },
+    {
+        "id": 5,
+        "question": "आयुध निर्माणी दमदम, कोलकाता राजभाषा कार्यान्वयन समिति के अध्यक्ष का नाम बताइए।",
+        "marks": 2,
+        "correct_answer": "Shri Alok Kumar Choudhary"
+    }
+]
+
+
+# =========================================================
+# HELPER FUNCTIONS
+# =========================================================
+
+def get_one_liners():
+    return ONE_LINER_QUESTIONS
+
+
+def normalize_answer(text):
+    if text is None:
+        return ""
+
+    text = str(text).strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(
+        char for char in text
+        if not unicodedata.combining(char)
+    )
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def automatically_check_one_liner(participant_answer, correct_answer):
+    participant_normalized = normalize_answer(participant_answer)
+    correct_normalized = normalize_answer(correct_answer)
+
+    if (
+        participant_normalized
+        and correct_normalized
+        and participant_normalized == correct_normalized
+    ):
+        return 2
+
+    return 0
+
+
+def get_written_score(attempt):
+    if not attempt:
+        return 0
+
+    stored_answers = attempt.answers or {}
+    one_liner_answers = stored_answers.get("_one_liners", {})
+    total = 0
+
+    for question in get_one_liners():
+        data = one_liner_answers.get(str(question["id"]), {})
+        try:
+            marks = int(data.get("marks", 0))
+        except (TypeError, ValueError):
+            marks = 0
+        marks = max(0, min(marks, question["marks"]))
+        total += marks
+
+    return total
+
+
+def get_total_score(attempt):
+    if not attempt:
+        return 0
+    return attempt.score + get_written_score(attempt)
+
+
+def get_total_marks(attempt=None):
+    mcq_count = attempt.total_questions if attempt else Question.query.count()
+    return mcq_count + TOTAL_ONE_LINER_MARKS
 
 
 # =========================================================
@@ -599,9 +717,22 @@ def start_exam():
                 question_ids
             )
 
-            attempt.answers = stored_answers
+        one_liner_data = stored_answers.get(
+            "_one_liners",
+            {}
+        )
 
-            db.session.commit()
+        for one_liner in get_one_liners():
+            key = str(one_liner["id"])
+            if key not in one_liner_data:
+                one_liner_data[key] = {
+                    "answer": "",
+                    "marks": 0
+                }
+
+        stored_answers["_one_liners"] = one_liner_data
+        attempt.answers = stored_answers
+        db.session.commit()
 
     # =====================================================
     # NEW ATTEMPT
@@ -623,6 +754,14 @@ def start_exam():
         answers_data["_question_ids"] = (
             question_ids
         )
+
+        answers_data["_one_liners"] = {}
+
+        for one_liner in get_one_liners():
+            answers_data["_one_liners"][str(one_liner["id"])] = {
+                "answer": "",
+                "marks": 0
+            }
 
         # -------------------------------------------------
         # Create a RANDOM mapping for every question.
@@ -847,6 +986,37 @@ def quiz():
             )
 
         # -----------------------------------------------------
+        # SAVE ONE-LINER ANSWERS
+        # -----------------------------------------------------
+
+        one_liner_answers = stored_answers.get(
+            "_one_liners",
+            {}
+        )
+
+        for one_liner in get_one_liners():
+
+            one_liner_id = str(one_liner["id"])
+
+            written_answer = request.form.get(
+                f"one_liner_{one_liner_id}",
+                ""
+            ).strip()
+
+            automatic_marks = automatically_check_one_liner(
+                written_answer,
+                one_liner["correct_answer"]
+            )
+
+            one_liner_answers[one_liner_id] = {
+                "answer": written_answer,
+                "marks": automatic_marks,
+                "automatic_marks": automatic_marks
+            }
+
+        stored_answers["_one_liners"] = one_liner_answers
+
+        # -----------------------------------------------------
         # Mark attempt as submitted
         # -----------------------------------------------------
 
@@ -985,7 +1155,8 @@ def quiz():
     return render_template(
         "quiz.html",
         participant=participant,
-        questions=question_data
+        questions=question_data,
+        one_liners=get_one_liners()
     )
 
 
@@ -1027,7 +1198,10 @@ def submitted():
     return render_template(
         "submitted.html",
         participant=participant,
-        attempt=attempt
+        attempt=attempt,
+        written_score=get_written_score(attempt),
+        total_score=get_total_score(attempt),
+        total_marks=get_total_marks(attempt)
     )
 
 
@@ -1063,7 +1237,10 @@ def already_submitted():
     return render_template(
         "already_submitted.html",
         participant=participant,
-        attempt=attempt
+        attempt=attempt,
+        written_score=get_written_score(attempt),
+        total_score=get_total_score(attempt),
+        total_marks=get_total_marks(attempt)
     )
 
 
@@ -1183,10 +1360,9 @@ def admin_dashboard():
 
             status = "Completed"
 
-            score_display = (
-                f"{attempt.score}/"
-                f"{attempt.total_questions}"
-            )
+            final_score = get_total_score(attempt)
+
+            score_display = f"{final_score}/70"
 
             completed_count += 1
 
@@ -1232,13 +1408,15 @@ def admin_dashboard():
 
                 "participant": participant,
 
-                "attempt": attempt
+                "attempt": attempt,
+
+                "total_score": get_total_score(attempt)
 
             })
 
     completed_attempts.sort(
         key=lambda x: (
-            -x["attempt"].score,
+            -x["total_score"],
             x["attempt"].submitted_at
             or datetime.max
         )
@@ -1257,7 +1435,9 @@ def admin_dashboard():
 
             "participant": item["participant"],
 
-            "attempt": item["attempt"]
+            "attempt": item["attempt"],
+
+            "total_score": item["total_score"]
 
         })
 
@@ -1477,6 +1657,52 @@ def admin_result(participant_id):
 
         })
 
+    one_liner_details = []
+
+    stored_one_liners = stored_answers.get(
+        "_one_liners",
+        {}
+    )
+
+    for one_liner in get_one_liners():
+
+        question_id = str(one_liner["id"])
+
+        answer_data = stored_one_liners.get(
+            question_id,
+            {}
+        )
+
+        participant_answer = answer_data.get(
+            "answer",
+            ""
+        )
+
+        marks_awarded = answer_data.get(
+            "marks",
+            0
+        )
+
+        automatic_marks = answer_data.get(
+            "automatic_marks",
+            automatically_check_one_liner(
+                participant_answer,
+                one_liner["correct_answer"]
+            )
+        )
+
+        one_liner_details.append({
+            "id": one_liner["id"],
+            "question": one_liner["question"],
+            "correct_answer": one_liner["correct_answer"],
+            "participant_answer": participant_answer,
+            "marks": one_liner["marks"],
+            "marks_awarded": marks_awarded,
+            "automatic_marks": automatic_marks
+        })
+
+    written_score = get_written_score(attempt)
+
     return render_template(
 
         "admin_result.html",
@@ -1485,8 +1711,103 @@ def admin_result(participant_id):
 
         attempt=attempt,
 
-        answer_details=answer_details
+        answer_details=answer_details,
 
+        one_liner_details=one_liner_details,
+
+        written_score=written_score,
+
+        total_score=get_total_score(attempt),
+
+        total_marks=get_total_marks(attempt)
+
+    )
+
+
+# =========================================================
+# ADMIN GRADE ONE-LINER ANSWERS
+# =========================================================
+
+@app.route(
+    "/admin/result/<int:participant_id>/grade",
+    methods=["POST"]
+)
+def admin_grade_one_liners(participant_id):
+
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+
+    participant = db.session.get(
+        Participant,
+        participant_id
+    )
+
+    if not participant:
+        flash("Participant not found.")
+        return redirect(url_for("admin_dashboard"))
+
+    attempt = Attempt.query.filter_by(
+        participant_id=participant.id,
+        status="submitted"
+    ).order_by(
+        Attempt.id.desc()
+    ).first()
+
+    if not attempt:
+        flash("Submitted attempt not found.")
+        return redirect(url_for("admin_dashboard"))
+
+    stored_answers = attempt.answers or {}
+
+    one_liner_answers = stored_answers.get(
+        "_one_liners",
+        {}
+    )
+
+    for question in get_one_liners():
+
+        question_id = str(question["id"])
+
+        mark_value = request.form.get(
+            f"marks_{question_id}",
+            "0"
+        ).strip()
+
+        try:
+            marks = int(mark_value)
+        except (ValueError, TypeError):
+            marks = 0
+
+        marks = max(
+            0,
+            min(
+                marks,
+                question["marks"]
+            )
+        )
+
+        answer_data = one_liner_answers.get(
+            question_id,
+            {}
+        )
+
+        answer_data["marks"] = marks
+
+        one_liner_answers[question_id] = answer_data
+
+    stored_answers["_one_liners"] = one_liner_answers
+
+    attempt.answers = stored_answers
+
+    db.session.commit()
+
+    flash("One-liner marks saved successfully.")
+
+    return redirect(
+        url_for(
+            "admin_result",
+            participant_id=participant.id
+        )
     )
 
 
@@ -1527,11 +1848,12 @@ def admin_reset(participant_id):
     # This also deletes answer records because
     # of the cascade relationship.
 
-    Attempt.query.filter_by(
+    attempts = Attempt.query.filter_by(
         participant_id=participant.id
-    ).delete(
-        synchronize_session=False
-    )
+    ).all()
+
+    for attempt in attempts:
+        db.session.delete(attempt)
 
     db.session.commit()
 
