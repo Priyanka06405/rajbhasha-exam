@@ -989,57 +989,37 @@ def quiz():
                 answer_record
             )
 
-        # =================================================
-        # SAVE ONE-LINER ANSWERS
-        # =================================================
+# =================================================
+# SAVE ONE-LINER ANSWERS
+# =================================================
 
-        one_liner_answers = (
-            stored_answers.get(
-                "_one_liners",
-                {}
-            )
-        )
+one_liner_answers = {}
 
-        for one_liner in get_one_liners():
+# Debug: show what the browser actually sent
+print("========== ONE-LINER FORM DATA ==========")
 
-            one_liner_id = str(
-                one_liner["id"]
-            )
+for key, value in request.form.items():
+    if key.startswith("one_liner_"):
+        print(key, "=", repr(value))
 
-            field_name = (
-                f"one_liner_{one_liner_id}"
-            )
+print("=========================================")
 
-            # Get exactly what participant typed
-            written_answer = request.form.get(
-                field_name
-            )
+for one_liner in get_one_liners():
 
-            if written_answer is None:
+    one_liner_id = str(one_liner["id"])
 
-                written_answer = ""
+    field_name = f"one_liner_{one_liner_id}"
 
-            written_answer = (
-                written_answer.strip()
-            )
+    written_answer = request.form.get(field_name, "")
 
-            # Save answer.
-            # Admin will award 0, 1 or 2 marks.
-            one_liner_answers[
-                one_liner_id
-            ] = {
+    written_answer = written_answer.strip()
 
-                "answer":
-                    written_answer,
+    one_liner_answers[one_liner_id] = {
+        "answer": written_answer,
+        "marks": 0
+    }
 
-                "marks":
-                    0
-
-            }
-
-        stored_answers[
-            "_one_liners"
-        ] = one_liner_answers
+stored_answers["_one_liners"] = one_liner_answers
 
         # =================================================
         # SAVE FINAL ATTEMPT
