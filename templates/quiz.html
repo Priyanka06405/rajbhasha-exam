@@ -3,6 +3,7 @@
 {% block content %}
 
 <style>
+
     .exam-header {
         background: #f8f9fa;
         padding: 18px;
@@ -65,6 +66,7 @@
         border-radius: 7px;
         resize: vertical;
         font-size: 16px;
+        font-family: Arial, Helvetica, sans-serif;
     }
 
     .submit-area {
@@ -91,8 +93,13 @@
         font-size: 14px;
         font-weight: normal;
     }
+
 </style>
 
+
+<!-- =====================================================
+     EXAM HEADER
+     ===================================================== -->
 
 <div class="exam-header">
 
@@ -116,126 +123,135 @@
 </div>
 
 
-<textarea
-    form="examForm"
-    name="one_liner_{{ q.id }}"
-    placeholder="अपना उत्तर यहाँ लिखें..."
-    required
-></textarea>
+<!-- =====================================================
+     IMPORTANT: ONE FORM FOR THE ENTIRE EXAM
+     ===================================================== -->
 
-    <!-- =================================================
-         SECTION A
-         ================================================= -->
+<form
+    id="examForm"
+    method="POST"
+    action="{{ url_for('quiz') }}"
+    onsubmit="return confirm('क्या आप परीक्षा जमा करना चाहते हैं? जमा करने के बाद आप उत्तर बदल नहीं पाएंगे।');"
+>
 
-    <div class="section-title">
 
-        <h3 style="margin:0;">
-            Section A – बहुविकल्पीय प्रश्न
-        </h3>
+<!-- =====================================================
+     SECTION A — MCQs
+     ===================================================== -->
 
-        <div style="margin-top:5px;">
-            60 Questions × 1 Mark = 60 Marks
-        </div>
+<div class="section-title">
+
+    <h3 style="margin:0;">
+        Section A – बहुविकल्पीय प्रश्न
+    </h3>
+
+    <div style="margin-top:5px;">
+        60 Questions × 1 Mark = 60 Marks
+    </div>
+
+</div>
+
+
+{% for q in questions %}
+
+<div class="question-card">
+
+    <div class="question-number">
+
+        Q{{ loop.index }}.
+        {{ q.question }}
+
+        <span class="marks">
+            (1 Mark)
+        </span>
 
     </div>
 
 
-    {% for q in questions %}
+    {% for option in q.options %}
 
-    <div class="question-card">
+    <label class="option">
 
-        <div class="question-number">
-
-            Q{{ loop.index }}.
-            {{ q.question }}
-
-            <span class="marks">
-                (1 Mark)
-            </span>
-
-        </div>
-
-
-        {% for option in q.options %}
-
-        <label class="option">
-
-            <input
-                type="radio"
-                name="question_{{ q.id }}"
-                value="{{ option.letter }}"
-            >
-
-            <strong>{{ option.letter }}.</strong>
-            {{ option.text }}
-
-        </label>
-
-        {% endfor %}
-
-    </div>
-
-    {% endfor %}
-
-
-    <!-- =================================================
-         SECTION B
-         ================================================= -->
-
-    <div class="section-title">
-
-        <h3 style="margin:0;">
-            Section B – One-Liner Questions
-        </h3>
-
-        <div style="margin-top:5px;">
-            5 Questions × 2 Marks = 10 Marks
-        </div>
-
-    </div>
-
-
-    {% for q in one_liners %}
-
-    <div class="one-liner-card">
-
-        <div class="question-number">
-
-            Q{{ loop.index }}.
-            {{ q.question }}
-
-            <span class="marks">
-                ({{ q.marks }} Marks)
-            </span>
-
-        </div>
-
-
-       <textarea
-    name="one_liner_{{ q.id }}"
-    placeholder="अपना उत्तर यहाँ लिखें..."
-    required
-></textarea>
-
-    </div>
-
-    {% endfor %}
-
-
-    <!-- =================================================
-         SUBMIT
-         ================================================= -->
-
-    <div class="submit-area">
-
-        <button
-            type="submit"
-            class="submit-btn"
+        <input
+            type="radio"
+            name="question_{{ q.id }}"
+            value="{{ option.letter }}"
         >
-            परीक्षा जमा करें
-        </button>
+
+        <strong>
+            {{ option.letter }}.
+        </strong>
+
+        {{ option.text }}
+
+    </label>
+
+    {% endfor %}
+
+</div>
+
+{% endfor %}
+
+
+<!-- =====================================================
+     SECTION B — ONE-LINER QUESTIONS
+     ===================================================== -->
+
+<div class="section-title">
+
+    <h3 style="margin:0;">
+        Section B – One-Liner Questions
+    </h3>
+
+    <div style="margin-top:5px;">
+        5 Questions × 2 Marks = 10 Marks
+    </div>
+
+</div>
+
+
+{% for q in one_liners %}
+
+<div class="one-liner-card">
+
+    <div class="question-number">
+
+        Q{{ loop.index }}.
+        {{ q.question }}
+
+        <span class="marks">
+            ({{ q.marks }} Marks)
+        </span>
 
     </div>
+
+
+    <textarea
+        name="one_liner_{{ q.id }}"
+        placeholder="अपना उत्तर यहाँ लिखें..."
+        required
+    ></textarea>
+
+</div>
+
+{% endfor %}
+
+
+<!-- =====================================================
+     SUBMIT BUTTON
+     ===================================================== -->
+
+<div class="submit-area">
+
+    <button
+        type="submit"
+        class="submit-btn"
+    >
+        परीक्षा जमा करें
+    </button>
+
+</div>
+
 
 </form>
 
