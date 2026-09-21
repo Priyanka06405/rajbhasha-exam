@@ -1221,6 +1221,80 @@ def quiz():
 
     )
 # =========================================================
+# SUBMITTED PAGE
+# =========================================================
+
+@app.route("/submitted")
+def submitted():
+
+    participant_id = session.get("participant_id")
+
+    if not participant_id:
+        return redirect(url_for("login"))
+
+    participant = db.session.get(
+        Participant,
+        participant_id
+    )
+
+    attempt = Attempt.query.filter_by(
+        participant_id=participant_id,
+        status="submitted"
+    ).order_by(
+        Attempt.id.desc()
+    ).first()
+
+    if not participant or not attempt:
+        return redirect(url_for("start_exam"))
+
+    return render_template(
+        "submitted.html",
+        participant=participant,
+        attempt=attempt,
+        written_score=get_written_score(attempt),
+        total_score=get_total_score(attempt),
+        total_marks=get_total_marks(attempt)
+    )
+
+
+# =========================================================
+# ALREADY SUBMITTED
+# =========================================================
+
+@app.route("/already-submitted")
+def already_submitted():
+
+    participant_id = session.get("participant_id")
+
+    if not participant_id:
+        return redirect(url_for("login"))
+
+    participant = db.session.get(
+        Participant,
+        participant_id
+    )
+
+    attempt = Attempt.query.filter_by(
+        participant_id=participant_id,
+        status="submitted"
+    ).order_by(
+        Attempt.id.desc()
+    ).first()
+
+    if not participant:
+        return redirect(url_for("login"))
+
+    return render_template(
+        "already_submitted.html",
+        participant=participant,
+        attempt=attempt,
+        written_score=get_written_score(attempt),
+        total_score=get_total_score(attempt),
+        total_marks=get_total_marks(attempt)
+    )
+
+
+# =========================================================
 # ADMIN LOGIN
 # =========================================================
 
